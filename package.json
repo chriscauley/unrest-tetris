@@ -1,0 +1,28 @@
+{
+  "name": "@unrest/tetris",
+  "version": "0.0.0",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/tetris.umd.js",
+  "module": "./dist/tetris.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/tetris.es.js",
+      "require": "./dist/tetris.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint \"src/**/*\" \"__tests__/**/*\"",
+    "serve": "vite preview"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.14.7",
+    "@unrest/eslint-config": "^0.0.5",
+    "babel-jest": "^27.0.6",
+    "jest": "^27.0.6",
+    "vite": "^2.4.0"
+  }
+}
