@@ -1,5 +1,22 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Board.clearLine 1`] = `
+Object {
+  "180": 8,
+  "181": 3,
+  "183": 4,
+  "185": 5,
+  "187": 6,
+  "189": 7,
+  "190": 8,
+  "191": 3,
+  "193": 4,
+  "195": 5,
+  "197": 6,
+  "199": 7,
+}
+`
+
 exports[`board.dropPiece 1`] = `
 Object {
   "i": 6,

@@ -7,7 +7,8 @@ const B = {
     const geo = new Geo(W, H)
     const start = options.start || geo.xy2index([Math.floor(W / 2) - 1, 1])
     const _id = 1
-    return { W, H, entities: {}, indexes: {}, geo, start, _id }
+    const xs = new Array(geo.W).fill(0).map((_, i) => i)
+    return { W, H, entities: {}, indexes: {}, geo, start, _id, xs }
   },
   addPiece: (board, shape) => {
     const { dxys } = Piece[shape]
@@ -18,8 +19,8 @@ const B = {
 
     B._placePiece(board, piece.id, xys)
   },
-  rotatePiece: (board, piece_id, dspin) => {
-    const piece = board.entities[piece_id]
+  rotateCurrent: (board, dspin) => {
+    const piece = board.current_piece
     const { dxys, max_spin } = Piece[piece.shape]
     if (max_spin === 0) {
       return // 'o' or square piece cannot rotate
@@ -39,7 +40,7 @@ const B = {
     })
 
     const new_xys = new_dxys.map((dxy) => [old_x + dxy[0], old_y + dxy[1]])
-    B._placePiece(board, piece_id, new_xys)
+    B._placePiece(board, piece.id, new_xys)
 
     // all good, set piece
     piece.spin = new_spin
@@ -48,7 +49,7 @@ const B = {
     const piece = board.entities[piece_id]
     const new_xys = piece.indexes.map(board.geo.index2xy).map((xy) => vector.add(xy, dxy))
     B._placePiece(board, board.current_piece.id, new_xys)
-    piece.index = vector.add(board.index2xy(piece.index), dxy)
+    piece.index = vector.add(board.geo.index2xy(piece.index), dxy)
   },
   _placePiece(board, piece_id, new_xys) {
     const new_indexes = new_xys.map(board.geo.xy2index)
@@ -74,6 +75,43 @@ const B = {
         continue
       }
     }
+  },
+  nextTurn(board) {
+    const piece = board.current_piece
+    const ys = [...new Set(piece.indexes.map(board.geo.index2xy).map((xy) => xy[1]))]
+    const delete_ys = ys.filter((y) => {
+      const first_empty_x = board.xs.find((x) => !board.indexes[board.geo.xy2index([x, y])])
+      return first_empty_x === undefined
+    })
+    delete_ys.sort()
+    delete_ys.forEach((y) => B.removeLine(board, y))
+  },
+  removeLine(board, y) {
+    const moved = {}
+    const { W, xy2index } = board.geo
+    const min_index = xy2index([0, y])
+    board.xs.forEach((x) => {
+      const index = xy2index([x, y])
+      const piece_id = board.indexes[index]
+      delete board.indexes[index]
+      const piece = board.entities[piece_id]
+      piece.indexes = piece.indexes.filter((i) => i !== index)
+      if (!moved[piece_id]) {
+        piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
+        moved[piece_id] = true
+      }
+      if (!piece.indexes.length) {
+        delete board.entities[piece_id]
+      }
+    })
+    const new_entries = Object.entries(board.indexes).map(([index, piece_id]) => {
+      index = Number(index)
+      if (index < min_index) {
+        index += W
+      }
+      return [index, piece_id]
+    })
+    board.indexes = Object.fromEntries(new_entries)
   },
 }
 
