@@ -1,5 +1,3 @@
-import B from './lib/Board'
+import _Board from './lib/Board'
 
-export default () => {
-  B.new()
-}
+export const Board = _Board

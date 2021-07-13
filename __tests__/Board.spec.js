@@ -1,6 +1,8 @@
 import Board from '../src/lib/Board'
 import Piece from '../src/lib/Piece'
 
+const print = (board) => console.log(board.geo.print(board.indexes, { empty: 'X' })) // eslint-disable-line
+
 test('Board.rotateCurrent', () => {
   const results = {}
   Piece.all.forEach((piece) => {

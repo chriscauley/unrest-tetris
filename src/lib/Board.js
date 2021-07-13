@@ -1,20 +1,23 @@
 import Piece from './Piece'
 import Geo, { mod, vector } from '@unrest/geo'
 
+const range = (len) => new Array(len).fill(0).map((_, i) => i)
+
 const B = {
   new: (options = {}) => {
     const { W = 10, H = 20 } = options
     const geo = new Geo(W, H)
     const start = options.start || geo.xy2index([Math.floor(W / 2) - 1, 1])
     const _id = 1
-    const xs = new Array(geo.W).fill(0).map((_, i) => i)
+    const xs = range(W)
     return { W, H, entities: {}, indexes: {}, geo, start, _id, xs }
   },
   addPiece: (board, shape) => {
     const { dxys } = Piece[shape]
     const xys = dxys.map((dxy) => vector.add(board.geo.index2xy(board.start), dxy))
     const id = board._id++
-    const piece = { id, shape, spin: 0, index: board.start, indexes: [] }
+    const block_ids = range(xys.length)
+    const piece = { id, shape, spin: 0, index: board.start, indexes: [], block_ids }
     board.current_piece = board.entities[id] = piece
 
     B._placePiece(board, piece.id, xys)
@@ -94,14 +97,22 @@ const B = {
       const index = xy2index([x, y])
       const piece_id = board.indexes[index]
       delete board.indexes[index]
-      const piece = board.entities[piece_id]
-      piece.indexes = piece.indexes.filter((i) => i !== index)
       if (!moved[piece_id]) {
-        piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
+        const piece = board.entities[piece_id]
+        const delete_blocks = []
+        piece.indexes.forEach((i, block_index) => {
+          if (board.geo.index2xy(i)[1] === y) {
+            delete_blocks.push(block_index)
+          }
+        })
+        piece.indexes = piece.indexes.filter(
+          (_, block_index) => !delete_blocks.includes(block_index),
+        )
         moved[piece_id] = true
-      }
-      if (!piece.indexes.length) {
-        delete board.entities[piece_id]
+        // piece.indexes = piece.indexes.filter((i) => i !== index)
+        if (!piece.indexes.length) {
+          delete board.entities[piece_id]
+        }
       }
     })
     const new_entries = Object.entries(board.indexes).map(([index, piece_id]) => {
@@ -112,6 +123,13 @@ const B = {
       return [index, piece_id]
     })
     board.indexes = Object.fromEntries(new_entries)
+    Object.values(board.entities).forEach((piece) => {
+      piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
+    })
+  },
+  doAction(board, action, ...args) {
+    board.actions.push([action, ...args])
+    B[action](board, ...args)
   },
 }
 
