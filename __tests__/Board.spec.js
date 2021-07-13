@@ -1,7 +1,7 @@
 import Board from '../src/lib/Board'
 import Piece from '../src/lib/Piece'
 
-test('piece rotations', () => {
+test('Board.rotateCurrent', () => {
   const results = {}
   Piece.all.forEach((piece) => {
     const board = Board.new()
@@ -15,7 +15,7 @@ test('piece rotations', () => {
   expect(results).toMatchSnapshot()
 })
 
-test('board.dropPiece', () => {
+test('Board.dropCurrent', () => {
   // If you rotate and drop the piece, how many rotations does it take before game over?
   const results = {}
   Piece.all.forEach((piece) => {
@@ -25,7 +25,7 @@ test('board.dropPiece', () => {
       try {
         Board.addPiece(board, piece.shape)
         Board.rotateCurrent(board, 1)
-        Board.dropPiece(board, board.current_piece.id)
+        Board.dropCurrent(board)
       } catch (_e) {
         break
       }
@@ -44,8 +44,8 @@ test('Board.clearLine', () => {
   const placePiece = (shape, dx, rotate) => {
     Board.addPiece(board, shape)
     rotate && Board.rotateCurrent(board, 1)
-    Board.movePiece(board, board.current_piece.id, [dx, 0])
-    Board.dropPiece(board, board.current_piece.id)
+    Board.moveCurrent(board, [dx, 0])
+    Board.dropCurrent(board)
   }
 
   placePiece('i', 4)

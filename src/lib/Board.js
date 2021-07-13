@@ -45,10 +45,10 @@ const B = {
     // all good, set piece
     piece.spin = new_spin
   },
-  movePiece(board, piece_id, dxy) {
-    const piece = board.entities[piece_id]
+  moveCurrent(board, dxy) {
+    const piece = board.current_piece
     const new_xys = piece.indexes.map(board.geo.index2xy).map((xy) => vector.add(xy, dxy))
-    B._placePiece(board, board.current_piece.id, new_xys)
+    B._placePiece(board, piece.id, new_xys)
     piece.index = vector.add(board.geo.index2xy(piece.index), dxy)
   },
   _placePiece(board, piece_id, new_xys) {
@@ -67,10 +67,10 @@ const B = {
     new_indexes.forEach((index) => (board.indexes[index] = piece.id))
     piece.indexes = new_indexes
   },
-  dropPiece(board, piece_id) {
+  dropCurrent(board) {
     for (let dy = 0; dy < board.geo.H; dy++) {
       try {
-        B.movePiece(board, piece_id, [0, 1])
+        B.moveCurrent(board, [0, 1])
       } catch (_e) {
         continue
       }
