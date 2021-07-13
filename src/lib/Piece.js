@@ -45,5 +45,6 @@ Object.entries(Piece).forEach(([shape, piece]) => {
 
 export default {
   all,
+  shapes: all.map((p) => p.shape),
   ...Piece,
 }
