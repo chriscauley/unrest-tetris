@@ -42,9 +42,20 @@ Object.entries(Piece).forEach(([shape, piece]) => {
   all.push(piece)
   piece.dxys = piece.dxs.map((dx, i) => [dx, piece.dys[i]])
 })
+const shapes = all.map((p) => p.shape)
 
 export default {
   all,
-  shapes: all.map((p) => p.shape),
+  shapes,
   ...Piece,
+  generator: (s) => {
+    if (typeof s === 'Number') {
+      const rand = splitmix64(s)
+      return () => rand.choice(shapes)
+    }
+    if (Piece[s]) {
+      return () => s
+    }
+    throw `Unknown generator: ${s}`
+  },
 }

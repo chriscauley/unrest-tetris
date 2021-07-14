@@ -6,6 +6,7 @@
   ],
   "main": "./dist/tetris.umd.js",
   "module": "./dist/tetris.es.js",
+  "license": "MIT",
   "exports": {
     ".": {
       "import": "./dist/tetris.es.js",

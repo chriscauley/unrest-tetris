@@ -11,11 +11,23 @@
 
 <script>
 import { Game } from '@unrest/tetris'
+import mousetrap from '@unrest/vue-mousetrap'
 
 export default {
+  mixins: [mousetrap.Mixin],
   data() {
     const game = new Game()
-    return { game, scale: 30, buffer: 2 }
+    const mousetrap = {
+      up: () => this.input('rotate'),
+      right: () => this.input('right'),
+      left: () => this.input('left'),
+      down: () => this.input('down'),
+      space: {
+        keypress: () => this.input('drop'),
+        keyup: () => this.input('lock'),
+      },
+    }
+    return { game, scale: 30, buffer: 2, mousetrap, hash: null }
   },
   computed: {
     outer_rect() {
@@ -52,6 +64,12 @@ export default {
           }
         }),
       }))
+    },
+  },
+  methods: {
+    input(action) {
+      this.game.input(action)
+      this.hash = Math.random()
     },
   },
 }

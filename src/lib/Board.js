@@ -10,7 +10,17 @@ const B = {
     const start = options.start || geo.xy2index([Math.floor(W / 2) - 1, 1])
     const _id = 1
     const xs = range(W)
-    return { W, H, entities: {}, indexes: {}, geo, start, _id, xs }
+    return {
+      W,
+      H,
+      entities: {},
+      indexes: {},
+      geo,
+      start,
+      _id,
+      xs,
+      actions: [],
+    }
   },
   addPiece: (board, shape) => {
     const { dxys } = Piece[shape]
@@ -53,6 +63,13 @@ const B = {
     const new_xys = piece.indexes.map(board.geo.index2xy).map((xy) => vector.add(xy, dxy))
     B._placePiece(board, piece.id, new_xys)
     piece.index = vector.add(board.geo.index2xy(piece.index), dxy)
+  },
+  moveCurrentDown(board) {
+    const old_index = board.current_piece.index
+    B.moveCurrent(board, [0, 1])
+    if (old_index !== board.current_piece.index) {
+      B.nextTurn(board)
+    }
   },
   _placePiece(board, piece_id, new_xys) {
     const new_indexes = new_xys.map(board.geo.xy2index)
@@ -129,7 +146,9 @@ const B = {
   },
   doAction(board, action, ...args) {
     board.actions.push([action, ...args])
-    B[action](board, ...args)
+    try {
+      B[action](board, ...args)
+    } catch (e) {}
   },
 }
 
