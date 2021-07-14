@@ -6,11 +6,11 @@ const print = (board) => console.log(board.geo.print(board.indexes, { empty: 'X'
 test('Board.rotateCurrent', () => {
   const results = {}
   Piece.all.forEach((piece) => {
-    const board = Board.new()
-    Board.addPiece(board, piece.shape)
+    const board = new Board()
+    board.addPiece(piece.shape)
     results[piece.shape] = Object.keys(board.indexes).join(',')
     for (let i = 0; i < 4; i++) {
-      Board.rotateCurrent(board, 1)
+      board.rotateCurrent(1)
       results[piece.shape] += '|' + Object.keys(board.indexes).join(',')
     }
   })
@@ -22,12 +22,12 @@ test('Board.dropCurrent', () => {
   const results = {}
   Piece.all.forEach((piece) => {
     results[piece.shape] = 0
-    const board = Board.new()
+    const board = new Board()
     while (results[piece.shape]++ < 30) {
       try {
-        Board.addPiece(board, piece.shape)
-        Board.rotateCurrent(board, 1)
-        Board.dropCurrent(board)
+        board.addPiece(piece.shape)
+        board.rotateCurrent(1)
+        board.dropCurrent()
       } catch (_e) {
         break
       }
@@ -37,17 +37,17 @@ test('Board.dropCurrent', () => {
 })
 
 test('Board.options', () => {
-  const board = Board.new({ W: 6, H: 6 })
+  const board = new Board({ W: 6, H: 6 })
   expect(board.geo.AREA).toBe(36)
 })
 
 test('Board.clearLine', () => {
-  const board = Board.new()
+  const board = new Board()
   const placePiece = (shape, dx, rotate) => {
-    Board.addPiece(board, shape)
-    rotate && Board.rotateCurrent(board, 1)
-    Board.moveCurrent(board, [dx, 0])
-    Board.dropCurrent(board)
+    board.addPiece(shape)
+    rotate && board.rotateCurrent(1)
+    board.moveCurrent([dx, 0])
+    board.dropCurrent()
   }
 
   placePiece('i', 4)
@@ -61,7 +61,7 @@ test('Board.clearLine', () => {
 
   placePiece('i', -4, true)
 
-  Board.nextTurn(board)
+  board.nextTurn()
   expect(board.indexes).toMatchSnapshot()
 
   // pieces 1 and 2 were cleared

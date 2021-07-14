@@ -9,9 +9,9 @@ export default class Game {
   }
   reset() {
     const { seed = new Date().valueOf() % 256 } = this.options
-    this.board = Board.new()
+    this.board = new Board()
     this.rand = splitmix64(seed)
-    Board.addPiece(this.board, this.rand.choice(Piece.shapes))
+    this.board.addPiece(this.rand.choice(Piece.shapes))
   }
   input(action) {
     const actions = {
@@ -22,6 +22,6 @@ export default class Game {
       drop: ['dropCurrent'],
       lock: ['nextTurn'],
     }
-    Board.doAction(this.board, ...actions[action])
+    this.board.doAction(...actions[action])
   }
 }
