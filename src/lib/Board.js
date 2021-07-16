@@ -12,7 +12,7 @@ export default class Board {
       entities: {},
       indexes: {},
       geo,
-      start: options.start || geo.xy2index([Math.floor(W / 2) - 1, 1]),
+      start_xy: options.start_xy || geo.xy2index([Math.floor(W / 2) - 1, 1]),
       _id: 1,
       xs: range(W),
       actions: [],
@@ -41,11 +41,11 @@ export default class Board {
       if (new_spin === 0) {
         return [dx, dy]
       } else if (new_spin === 1) {
-        return [-dy, -dx]
+        return [dy, -dx]
       } else if (new_spin === 2) {
         return [-dx, -dy]
       }
-      return [dy, dx]
+      return [-dy, dx]
     })
 
     const new_xys = new_dxys.map((dxy) => [old_x + dxy[0], old_y + dxy[1]])
@@ -58,12 +58,13 @@ export default class Board {
     const piece = this.current_piece
     const new_xys = piece.indexes.map(this.geo.index2xy).map((xy) => vector.add(xy, dxy))
     this._placePiece(piece.id, new_xys)
-    piece.index = vector.add(this.geo.index2xy(piece.index), dxy)
+    piece.index = this.geo.xy2index(vector.add(this.geo.index2xy(piece.index), dxy))
   }
   moveCurrentDown() {
+    // down has the potential to lock and clear (next turn)
     const old_index = this.current_piece.index
     this.moveCurrent([0, 1])
-    if (old_index !== this.current_piece.index) {
+    if (old_index === this.current_piece.index) {
       this.nextTurn()
     }
   }
