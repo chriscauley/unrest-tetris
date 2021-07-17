@@ -1,6 +1,4 @@
 import Board from './Board'
-import Piece from './Piece'
-import splitmix64 from './splitmix64'
 
 export default class Game {
   constructor(options = {}) {
@@ -8,16 +6,16 @@ export default class Game {
     this.reset()
   }
   reset() {
-    const { seed = new Date().valueOf() % 256 } = this.options
-    this.board = new Board()
-    this.rand = splitmix64(seed)
-    this.board.addPiece(this.rand.choice(Piece.shapes))
+    const { seed } = this.options
+    this.board = new Board({ seed })
+    this.board.start()
   }
   input(action) {
+    clearTimeout(this.timeout)
     const actions = {
       rotate: ['rotateCurrent', 1],
-      left: ['moveCurrent', [-1, 0]],
-      right: ['moveCurrent', [1, 0]],
+      left: ['moveCurrentLeft'],
+      right: ['moveCurrentRight'],
       down: ['moveCurrentDown'],
       drop: ['dropCurrent'],
       lock: ['nextTurn'],

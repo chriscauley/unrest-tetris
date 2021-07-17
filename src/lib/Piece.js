@@ -56,8 +56,9 @@ export default {
       const rand = splitmix64(s)
       return () => rand.choice(shapes)
     }
-    if (Piece[s]) {
-      return () => s
+    if (Piece[s[0]]) {
+      let i = 0
+      return () => s[i++%s.length]
     }
     throw `Unknown generator: ${s}`
   },

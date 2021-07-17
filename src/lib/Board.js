@@ -16,14 +16,40 @@ export default class Board {
       _id: 1,
       xs: range(W),
       actions: [],
+      generator: Piece.generator(options.seed),
+      ghost: null,
     })
   }
+  start() {
+    this.setLevel(1)
+    // this.resume()
+    this.nextTurn()
+  }
+  setLevel(level) {
+    this.level = level
+    this.game_speed = 500
+  }
+  nextTurn() {
+    const piece = this.current_piece
+    if (piece) {
+      const ys = [...new Set(piece.indexes.map(this.geo.index2xy).map((xy) => xy[1]))]
+      const delete_ys = ys.filter((y) => {
+        const first_empty_x = this.xs.find((x) => !this.indexes[this.geo.xy2index([x, y])])
+        return first_empty_x === undefined
+      })
+      delete_ys.sort()
+      delete_ys.forEach((y) => this.removeLine(y))
+    }
+    this.addPiece()
+    this.redraw()
+  }
   addPiece(shape) {
+    shape = shape || this.generator()
     const { dxys } = Piece[shape]
-    const xys = dxys.map((dxy) => vector.add(this.geo.index2xy(this.start), dxy))
+    const xys = dxys.map((dxy) => vector.add(this.geo.index2xy(this.start_xy), dxy))
     const id = this._id++
     const block_ids = range(xys.length)
-    const piece = { id, shape, spin: 0, index: this.start, indexes: [], block_ids }
+    const piece = { id, shape, spin: 0, index: this.start_xy, indexes: [], block_ids }
     this.current_piece = this.entities[id] = piece
 
     this._placePiece(piece.id, xys)
@@ -53,6 +79,7 @@ export default class Board {
 
     // all good, set piece
     piece.spin = new_spin
+    this.redraw()
   }
   moveCurrent(dxy) {
     const piece = this.current_piece
@@ -62,10 +89,41 @@ export default class Board {
   }
   moveCurrentDown() {
     // down has the potential to lock and clear (next turn)
-    const old_index = this.current_piece.index
-    this.moveCurrent([0, 1])
-    if (old_index === this.current_piece.index) {
+    try {
+      this.moveCurrent([0, 1])
+    } catch (_e) {
       this.nextTurn()
+    }
+    this.redraw()
+  }
+  moveCurrentLeft() {
+    this.moveCurrent([-1, 0])
+    this.redraw()
+  }
+  moveCurrentRight() {
+    this.moveCurrent([1, 0])
+    this.redraw()
+  }
+  redraw() {
+    this.ghost = this.current_piece.indexes
+    const { W, H } = this.geo
+    const max_index = W * H - 1
+    let _h = H
+    while (_h--) {
+      const new_ghost = this.ghost.map((i) => i + W)
+      const collides = new_ghost.find((index) => {
+        if (index > max_index) {
+          return true
+        }
+        if (this.indexes[index] === undefined) {
+          return false
+        }
+        return this.indexes[index] !== this.current_piece.id
+      })
+      if (collides !== undefined) {
+        break
+      }
+      this.ghost = new_ghost
     }
   }
   _placePiece(piece_id, new_xys) {
@@ -92,16 +150,6 @@ export default class Board {
         continue
       }
     }
-  }
-  nextTurn() {
-    const piece = this.current_piece
-    const ys = [...new Set(piece.indexes.map(this.geo.index2xy).map((xy) => xy[1]))]
-    const delete_ys = ys.filter((y) => {
-      const first_empty_x = this.xs.find((x) => !this.indexes[this.geo.xy2index([x, y])])
-      return first_empty_x === undefined
-    })
-    delete_ys.sort()
-    delete_ys.forEach((y) => this.removeLine(y))
   }
   removeLine(y) {
     const moved = {}
@@ -146,5 +194,17 @@ export default class Board {
     try {
       this[action](...args)
     } catch (e) {}
+  }
+  tick() {
+    clearTimeout(this.timeout)
+    this.moveCurrentDown()
+    this.timeout = setTimeout(() => this.tick(), this.game_speed)
+  }
+  pause() {
+    clearTimeout(this.timeout)
+  }
+  resume() {
+    clearTimeout(this.timeout)
+    this.timeout = setTimeout(() => this.tick(), this.game_speed)
   }
 }
