@@ -1206,10 +1206,10 @@
   resolved "https://registry.yarnpkg.com/@unrest/tailwind/-/tailwind-0.0.11.tgz#39b32fc7c930531cd07a20f084c2161ce1234190"
   integrity sha512-YivR7tWNAf3wxlqII1EFvAd9Aco8uIbUZvDZ6eFcdyWutDPthyHdtb+ArixR28KNfZh9mE/S7ywkN/VIkh6yKA==
 
-"@unrest/vue-form@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@unrest/vue-form/-/vue-form-0.0.1.tgz#96f905d0e5e0d35b29d4c55a0c39f36bc968158c"
-  integrity sha512-Q++Cm0g+BNHDBqze+Qds9p5FpGdn8zYW17nQokGrdgYvED6WcyEjL/q6p/ypniBx4iC2D//q9YSasAu30MLS5g==
+"@unrest/vue-form@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@unrest/vue-form/-/vue-form-0.0.4.tgz#2fcde4b159bd0f0a4cecb44d9d9e5113f270dd6c"
+  integrity sha512-rBviq3F4uaesQ6HZdOlrizZbzXNCkTIft+7/DkbPpTxUV8NkFn4B6wYKImjV6sNtx+cyK6Ehu9lYsQnptalpqw==
   dependencies:
     jsonschema "^1.4.0"
     lodash.pick "^4.4.0"

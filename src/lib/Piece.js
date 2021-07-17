@@ -52,6 +52,9 @@ export default {
   ...Piece,
   generator: (s) => {
     s = s || new Date().valueOf() % 256
+    if (s.match(/^\d+$/)) {
+      s = Number(s)
+    }
     if (typeof s === 'number') {
       const rand = splitmix64(s)
       return () => rand.choice(shapes)

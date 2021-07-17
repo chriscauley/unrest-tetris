@@ -1,6 +1,6 @@
 import { ReactiveLocalStorage } from '@unrest/vue-storage'
 
-const store = ReactiveLocalStorage('debug')
+const store = ReactiveLocalStorage({ LS_KEY: 'LocalStorage:debug' })
 
 store.schema = {
   type: 'lazy',
