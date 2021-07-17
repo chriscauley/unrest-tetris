@@ -16,6 +16,8 @@
     "@unrest/vue-storage": "^0.0.4",
     "@vue/cli-plugin-babel": "^4.5.13",
     "core-js": "^3.6.5",
+    "mitt": "^3.0.0",
+    "object-hash": "^2.2.0",
     "vue": "^3.0.0",
     "vue-router": "^4.0.10"
   },

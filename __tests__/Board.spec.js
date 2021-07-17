@@ -42,7 +42,7 @@ test('Board.options', () => {
 })
 
 test('Board.clearLine', () => {
-  const board = new Board({seed: 'i'})
+  const board = new Board({ seed: 'i' })
   const placePiece = (shape, dx, rotate) => {
     board.addPiece(shape)
     rotate && board.rotateCurrent(1)

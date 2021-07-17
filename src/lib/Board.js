@@ -1,14 +1,18 @@
 import Piece from './Piece'
 import Geo, { mod, vector } from '@unrest/geo'
+import mitt from 'mitt'
+import Hash from 'object-hash'
 
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
 
 export default class Board {
-  constructor(options = {}) {
+  constructor({ actions, hash, id, ...options } = {}) {
+    window.b = this
     this.options = options
     const { W = 10, H = 20 } = options
     const geo = new Geo(W, H)
     Object.assign(this, {
+      id,
       entities: {},
       indexes: {},
       geo,
@@ -18,12 +22,29 @@ export default class Board {
       actions: [],
       generator: Piece.generator(options.seed),
       ghost: null,
+      mitt: mitt(),
     })
+    if (actions) {
+      actions.forEach(({ index, spin }) => {
+        this.nextTurn()
+        this.current_piece.index = index
+        this.rotateCurrent(spin)
+      })
+      if (hash !== Hash(this.indexes)) {
+        console.warn('hash mis-match')
+      }
+    }
   }
   start() {
     this.setLevel(1)
     // this.resume()
     this.nextTurn()
+  }
+  serialize() {
+    const { actions, id } = this
+    const { seed } = this.options
+    const hash = Hash(this.indexes)
+    return { actions, hash, seed, id }
   }
   setLevel(level) {
     this.level = level
@@ -39,7 +60,10 @@ export default class Board {
       })
       delete_ys.sort()
       delete_ys.forEach((y) => this.removeLine(y))
+      const { index, spin } = this.current_piece
+      this.actions.push({ index, spin })
     }
+    this.mitt.emit('save')
     this.addPiece()
     this.redraw()
   }
@@ -190,7 +214,6 @@ export default class Board {
     })
   }
   doAction(action, ...args) {
-    this.actions.push([action, ...args])
     try {
       this[action](...args)
     } catch (e) {}

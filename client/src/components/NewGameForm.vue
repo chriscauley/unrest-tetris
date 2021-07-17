@@ -1,6 +1,10 @@
 <template>
   <div class="modal-content">
-    <unrest-form :schema="schema" :state="state" @change="update" @submit="submit" />
+    <unrest-form :schema="schema" :state="state" @change="update" @submit="submit">
+      <template #actions>
+        <button class="btn -primary">Start</button>
+      </template>
+    </unrest-form>
   </div>
 </template>
 
@@ -16,7 +20,11 @@ export default {
     },
     submit() {
       this.update()
-      this.$ui.alert()
+      const seed = this.state.seed || new Date().valueOf() % 256
+      this.$store.game.save({ seed }).then((data) => {
+        this.$router.push(`/play/${data.id}/`)
+        this.$ui.alert()
+      })
     },
   },
 }

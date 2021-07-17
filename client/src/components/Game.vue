@@ -18,8 +18,12 @@ import mousetrap from '@unrest/vue-mousetrap'
 
 export default {
   mixins: [mousetrap.Mixin],
+  props: {
+    saved_game: Object,
+  },
   data() {
-    const game = new Game(this.$route.query)
+    const game = new Game(this.saved_game)
+    game.on('save', () => this.$store.game.save(this.game.board.serialize()))
     const mousetrap = {
       up: () => this.input('rotate'),
       right: () => this.input('right'),

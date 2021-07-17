@@ -6,8 +6,8 @@ export default class Game {
     this.reset()
   }
   reset() {
-    const { seed } = this.options
-    this.board = new Board({ seed })
+    const { seed, id, actions, hash } = this.options
+    this.board = new Board({ seed, id, actions, hash })
     this.board.start()
   }
   input(action) {
@@ -21,5 +21,8 @@ export default class Game {
       lock: ['nextTurn'],
     }
     this.board.doAction(...actions[action])
+  }
+  on(action, f) {
+    this.board.mitt.on(action, f)
   }
 }

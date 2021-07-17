@@ -1,7 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import Home from '@/Home'
+import unrest from '@unrest/vue'
 
-const routes = [{ component: Home, path: '/' }]
+import views from '@/views'
+
+const routes = unrest.loadViews(views)
 
 const router = createRouter({
   history: createWebHashHistory(),

@@ -61,7 +61,7 @@ export default {
     }
     if (Piece[s[0]]) {
       let i = 0
-      return () => s[i++%s.length]
+      return () => s[i++ % s.length]
     }
     throw `Unknown generator: ${s}`
   },

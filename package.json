@@ -25,5 +25,9 @@
     "babel-jest": "^27.0.6",
     "jest": "^27.0.6",
     "vite": "^2.4.0"
+  },
+  "dependencies": {
+    "mitt": "^3.0.0",
+    "object-hash": "^2.2.0"
   }
 }
