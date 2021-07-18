@@ -2,9 +2,8 @@ import Board from '../src/lib/Board'
 import Piece from '../src/lib/Piece'
 
 const print = (board) => console.log(board.geo.print(board.indexes, { empty: 'X' })) // eslint-disable-line
-const reducedIndexes = board => Object.fromEntries(
-  Object.entries(board.indexes).filter(e => e[1] !== board.WALL)
-)
+const reducedIndexes = (board) =>
+  Object.fromEntries(Object.entries(board.indexes).filter((e) => e[1] !== board.WALL))
 
 test('Board.rotateCurrent', () => {
   const results = {}
@@ -46,10 +45,10 @@ test('Board.options', () => {
 
 test('Board.clearLine', () => {
   const board = new Board({ seed: 'i' })
-  const placePiece = (shape, dx, rotate) => {
+  const placePiece = (shape, dindex, rotate) => {
     board.addPiece(shape)
     rotate && board.rotateCurrent(1)
-    board.moveCurrent([dx, 0])
+    board.moveCurrent(dindex)
     board.dropCurrent()
   }
 

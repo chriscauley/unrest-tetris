@@ -1,5 +1,5 @@
 import Piece from './Piece'
-import Geo, { mod, vector } from '@unrest/geo'
+import Geo, { mod } from '@unrest/geo'
 import mitt from 'mitt'
 import Hash from 'object-hash'
 
@@ -50,7 +50,7 @@ export default class Board {
       this.xs.pop()
     }
     wall.block_ids = wall.indexes
-    this._placePiece(WALL, wall.indexes.map(this.geo.index2xy))
+    this._placePiece(WALL, wall.indexes)
 
     if (actions) {
       actions.forEach(({ index, spin }) => {
@@ -98,13 +98,14 @@ export default class Board {
   addPiece(shape) {
     shape = shape || this.generator()
     const { dxys } = Piece[shape]
-    const xys = dxys.map((dxy) => vector.add(this.geo.index2xy(this.start_index), dxy))
+    const dindexes = dxys.map(this.geo.dxy2dindex)
+    const indexes = dindexes.map((dindex) => dindex + this.start_index)
     const id = this._id++
-    const block_ids = range(xys.length)
+    const block_ids = range(indexes.length)
     const piece = { id, shape, spin: 0, index: this.start_index, indexes: [], block_ids }
     this.current_piece = this.entities[id] = piece
 
-    this._placePiece(piece.id, xys)
+    this._placePiece(piece.id, indexes)
   }
   rotateCurrent(dspin) {
     const piece = this.current_piece
@@ -123,34 +124,36 @@ export default class Board {
       return [dy, -dx]
     })
 
-    const new_xys = new_dxys.map((dxy) => [old_x + dxy[0], old_y + dxy[1]])
-    this._placePiece(piece.id, new_xys)
+    const new_indexes = new_dxys
+      .map((dxy) => [old_x + dxy[0], old_y + dxy[1]])
+      .map(this.geo.xy2index)
+    this._placePiece(piece.id, new_indexes)
 
     // all good, set piece
     piece.spin = new_spin
     this.redraw()
   }
-  moveCurrent(dxy) {
+  moveCurrent(dindex) {
     const piece = this.current_piece
-    const new_xys = piece.indexes.map(this.geo.index2xy).map((xy) => vector.add(xy, dxy))
-    this._placePiece(piece.id, new_xys)
-    piece.index = this.geo.xy2index(vector.add(this.geo.index2xy(piece.index), dxy))
+    const new_indexes = piece.indexes.map((i) => i + dindex)
+    this._placePiece(piece.id, new_indexes)
+    piece.index += dindex
   }
   moveCurrentDown() {
     // down has the potential to lock and clear (next turn)
     try {
-      this.moveCurrent([0, 1])
+      this.moveCurrent(this.geo.W)
     } catch (_e) {
       this.nextTurn()
     }
     this.redraw()
   }
   moveCurrentLeft() {
-    this.moveCurrent([-1, 0])
+    this.moveCurrent(-1)
     this.redraw()
   }
   moveCurrentRight() {
-    this.moveCurrent([1, 0])
+    this.moveCurrent(1)
     this.redraw()
   }
   redraw() {
@@ -175,13 +178,7 @@ export default class Board {
       this.ghost = new_ghost
     }
   }
-  _placePiece(piece_id, new_xys) {
-    const new_indexes = new_xys.map(this.geo.xy2index)
-
-    // check to make sure piece doesn't collide with anything
-    if (new_xys.find((xy) => !this.geo.inBounds(xy))) {
-      throw `Unable to place: ${new_xys.join('|')} not in bounds`
-    }
+  _placePiece(piece_id, new_indexes) {
     if (new_indexes.map((index) => this.indexes[index]).find((id) => id && id !== piece_id)) {
       throw 'Unable to place piece due to collision'
     }
@@ -194,7 +191,7 @@ export default class Board {
   dropCurrent() {
     for (let dy = 0; dy < this.geo.H; dy++) {
       try {
-        this.moveCurrent([0, 1])
+        this.moveCurrent(this.geo.W)
       } catch (_e) {
         continue
       }
