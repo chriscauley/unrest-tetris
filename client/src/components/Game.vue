@@ -1,7 +1,6 @@
 <template>
   <svg v-bind="svg" tabindex="0" @focus="focus" @blur="blur">
-    <rect v-bind="outer_rect" fill="none" stroke="black" />
-    <g :transform="`translate(${scale}, ${scale})`">
+    <g :transform="`translate(${4 * scale}, ${scale})`">
       <template v-for="piece in prepped_pieces" :key="piece.id">
         <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
       </template>
@@ -9,11 +8,16 @@
         {{ block.key }}
       </text>
     </g>
+    <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale})`">
+      <template v-for="piece in queued_pieces" :key="piece.id">
+        <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
+      </template>
+    </g>
   </svg>
 </template>
 
 <script>
-import { Game, Palette } from '@unrest/tetris'
+import { Game, Palette, Piece } from '@unrest/tetris'
 import mousetrap from '@unrest/vue-mousetrap'
 
 export default {
@@ -62,21 +66,10 @@ export default {
       }
       return blocks
     },
-    outer_rect() {
-      const { W, H } = this.game.board.geo
-      const { scale, buffer } = this
-      return {
-        x: scale / 2,
-        y: scale / 2,
-        width: scale * (W + 1),
-        height: scale * (H + 1),
-        'stroke-width': scale - buffer,
-      }
-    },
     svg() {
       const { W, H } = this.game.board.geo
       return {
-        width: (2 + W) * this.scale,
+        width: (9 + W) * this.scale,
         height: (2 + H) * this.scale,
       }
     },
@@ -102,6 +95,20 @@ export default {
         }
       })
       return { id: 'ghost', blocks }
+    },
+    queued_pieces() {
+      const { buffer, scale } = this
+      return this.game.board.piece_queue.map((shape, iy) => ({
+        id: `queue-${iy}`,
+        blocks: Piece[shape].dxys.map(([x, y]) => ({
+          x: (2 + x) * scale + buffer,
+          y: (2 + y + 3 * iy) * scale + buffer,
+          width: scale - 2 * buffer,
+          height: scale - 2 * buffer,
+          key: `queue-${iy}-${[x, y]}`,
+          fill: Palette.default[shape],
+        })),
+      }))
     },
     pieces() {
       const { buffer, scale } = this

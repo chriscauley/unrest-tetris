@@ -32,6 +32,7 @@ export default class Board {
       generator: Piece.generator(options.seed),
       ghost: null,
       mitt: mitt(),
+      piece_queue: [],
     })
 
     this.cacheRotations()
@@ -98,7 +99,12 @@ export default class Board {
     this.redraw()
   }
   addPiece(shape) {
-    shape = shape || this.generator()
+    if (!shape) {
+      while (this.piece_queue.length < 8) {
+        this.piece_queue.push(this.generator())
+      }
+      shape = this.piece_queue.shift()
+    }
     const { dxys } = Piece[shape]
     const dindexes = dxys.map(this.geo.dxy2dindex)
     const indexes = dindexes.map((dindex) => dindex + this.start_index)
