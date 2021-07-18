@@ -6,8 +6,8 @@ export default class Game {
     this.reset()
   }
   reset() {
-    const { seed, id, actions, hash } = this.options
-    this.board = new Board({ seed, id, actions, hash })
+    const { seed, id, actions, hash, b } = this.options
+    this.board = new Board({ seed, id, actions, hash, b })
     this.board.start()
   }
   input(action) {

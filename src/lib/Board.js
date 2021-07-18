@@ -1,10 +1,13 @@
-import Piece from './Piece'
 import Geo, { mod } from '@unrest/geo'
 import mitt from 'mitt'
 import Hash from 'object-hash'
 
+import Piece from './Piece'
+import Btype from './Btype'
+
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
 const WALL = 'W'
+const ASH = 'A'
 
 export default class Board {
   constructor({ actions, hash, id, ...options } = {}) {
@@ -20,6 +23,7 @@ export default class Board {
 
     const geo = new Geo(W, H)
     Object.assign(this, {
+      ASH,
       WALL,
       id,
       entities: {},
@@ -52,8 +56,11 @@ export default class Board {
       this.xs.shift()
       this.xs.pop()
     }
+
     wall.block_ids = wall.indexes
     this._placePiece(WALL, wall.indexes)
+
+    this.makeAsh()
 
     if (actions) {
       actions.forEach(({ index, spin }) => {
@@ -66,6 +73,32 @@ export default class Board {
       }
     }
   }
+
+  makeAsh() {
+    const { b } = this.options
+    if (!b?.lines) {
+      return
+    }
+    const ash = (this.entities[ASH] = {
+      shape: ASH,
+      id: ASH,
+      indexes: [],
+    })
+    range(b.lines).forEach((dy) => {
+      const y = this.geo.H - dy - 2
+      this.xs.forEach((x) => ash.indexes.push(this.geo.xy2index([x, y])))
+    })
+    let i = 0
+    const removes = {}
+    const f = Btype[b.algorithm](b.seed)
+    while (i < ash.indexes.length) {
+      i += f()
+      removes[i] = true
+    }
+    ash.indexes = ash.indexes.filter((_, i) => !removes[i])
+    ash.block_ids = ash.indexes
+    this._placePiece(ASH, ash.indexes)
+  }
   start() {
     this.setLevel(1)
     // this.resume()
@@ -73,9 +106,8 @@ export default class Board {
   }
   serialize() {
     const { actions, id } = this
-    const { seed } = this.options
     const hash = Hash(this.indexes)
-    return { actions, hash, seed, id }
+    return { actions, hash, id, ...this.options }
   }
   setLevel(level) {
     this.level = level

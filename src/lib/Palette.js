@@ -8,6 +8,7 @@ const _default = {
   j: '#0101f7',
   outline: 'rgba(0,0,0,0.25)',
   W: '#000',
+  A: '#888',
 }
 
 export default { default: _default }

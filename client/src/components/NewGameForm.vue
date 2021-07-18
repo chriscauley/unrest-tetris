@@ -20,10 +20,12 @@ export default {
     },
     submit() {
       this.update()
+      const { b } = this.state
       const seed = this.state.seed || new Date().valueOf() % 256
-      this.$store.game.save({ seed }).then((data) => {
+      b.seed = b.seed || new Date().valueOf() % 256
+      this.$ui.alert()
+      this.$store.game.save({ seed, b }).then((data) => {
         this.$router.push(`/play/tetris/${data.id}/`)
-        this.$ui.alert()
       })
     },
   },
