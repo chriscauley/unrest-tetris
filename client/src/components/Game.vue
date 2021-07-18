@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { Game } from '@unrest/tetris'
+import { Game, Palette } from '@unrest/tetris'
 import mousetrap from '@unrest/vue-mousetrap'
 
 export default {
@@ -116,7 +116,7 @@ export default {
             width: scale - 2 * buffer,
             height: scale - 2 * buffer,
             key: `${piece.id}-${piece.block_ids[i]}`,
-            fill: 'gray',
+            fill: Palette.default[piece.shape],
           }
         }),
       }))

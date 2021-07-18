@@ -22,7 +22,7 @@ export default {
       this.update()
       const seed = this.state.seed || new Date().valueOf() % 256
       this.$store.game.save({ seed }).then((data) => {
-        this.$router.push(`/play/${data.id}/`)
+        this.$router.push(`/play/tetris/${data.id}/`)
         this.$ui.alert()
       })
     },
