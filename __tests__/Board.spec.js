@@ -50,14 +50,14 @@ test('Board.clearLine', () => {
     board.dropCurrent()
   }
 
-  placePiece('i', 4)
-  placePiece('i', 0)
+  placePiece('i', 3)
+  placePiece('i', -1)
   placePiece('i', -3, true)
 
-  placePiece('t', -1, true)
-  placePiece('t', 1, true)
-  placePiece('t', 3, true)
-  placePiece('t', 5, true)
+  placePiece('t', -2, true)
+  placePiece('t', 0, true)
+  placePiece('t', 2, true)
+  placePiece('t', 4, true)
 
   placePiece('i', -4, true)
 

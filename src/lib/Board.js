@@ -81,9 +81,6 @@ export default class Board {
   rotateCurrent(dspin) {
     const piece = this.current_piece
     const { dxys, max_spin } = Piece[piece.shape]
-    if (max_spin === 0) {
-      return // 'o' or square piece cannot rotate
-    }
 
     const new_spin = mod(piece.spin + dspin, max_spin)
     const [old_x, old_y] = this.geo.index2xy(piece.index)
@@ -91,11 +88,11 @@ export default class Board {
       if (new_spin === 0) {
         return [dx, dy]
       } else if (new_spin === 1) {
-        return [dy, -dx]
+        return [-dy, dx]
       } else if (new_spin === 2) {
         return [-dx, -dy]
       }
-      return [-dy, dx]
+      return [dy, -dx]
     })
 
     const new_xys = new_dxys.map((dxy) => [old_x + dxy[0], old_y + dxy[1]])

@@ -27,14 +27,14 @@ const Piece = {
     max_spin: 4,
   },
   i: {
-    dxs: [0, 1, -1, -2],
+    dxs: [0, 1, -1, 2],
     dys: [0, 0, 0, 0],
     max_spin: 2,
   },
   o: {
     dxs: [0, 1, 1, 0],
     dys: [0, 0, 1, 1],
-    max_spin: 0,
+    max_spin: 1,
   },
 }
 const all = []
@@ -52,7 +52,7 @@ export default {
   ...Piece,
   generator: (s) => {
     s = s || new Date().valueOf() % 256
-    if (s.match(/^\d+$/)) {
+    if (s.match?.(/^\d+$/)) {
       s = Number(s)
     }
     if (typeof s === 'number') {
