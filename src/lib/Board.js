@@ -34,6 +34,8 @@ export default class Board {
       mitt: mitt(),
     })
 
+    this.cacheRotations()
+
     const wall = (this.entities[WALL] = {
       shape: WALL,
       id: WALL,
@@ -107,30 +109,35 @@ export default class Board {
 
     this._placePiece(piece.id, indexes)
   }
-  rotateCurrent(dspin) {
-    const piece = this.current_piece
-    const { dxys, max_spin } = Piece[piece.shape]
-
-    const new_spin = mod(piece.spin + dspin, max_spin)
-    const [old_x, old_y] = this.geo.index2xy(piece.index)
-    const new_dxys = dxys.map(([dx, dy]) => {
-      if (new_spin === 0) {
-        return [dx, dy]
-      } else if (new_spin === 1) {
-        return [-dy, dx]
-      } else if (new_spin === 2) {
-        return [-dx, -dy]
-      }
-      return [dy, -dx]
+  cacheRotations() {
+    this._rotation_cache = {}
+    Piece.all.forEach(({ shape, dxys, max_spin }) => {
+      this._rotation_cache[shape] = {}
+      range(4).forEach((spin) => {
+        const adjusted_spin = spin % max_spin
+        const new_dxys = dxys.map(([dx, dy]) => {
+          if (adjusted_spin === 0) {
+            return [dx, dy]
+          } else if (adjusted_spin === 1) {
+            return [-dy, dx]
+          } else if (adjusted_spin === 2) {
+            return [-dx, -dy]
+          }
+          return [dy, -dx]
+        })
+        this._rotation_cache[shape][spin] = new_dxys.map(this.geo.dxy2dindex)
+      })
     })
+  }
+  rotateCurrent(dspin) {
+    const { shape, index, spin, id } = this.current_piece
 
-    const new_indexes = new_dxys
-      .map((dxy) => [old_x + dxy[0], old_y + dxy[1]])
-      .map(this.geo.xy2index)
-    this._placePiece(piece.id, new_indexes)
+    const new_spin = mod(spin + dspin, 4)
+    const new_indexes = this._rotation_cache[shape][new_spin].map((dindex) => dindex + index)
+    this._placePiece(id, new_indexes)
 
     // all good, set piece
-    piece.spin = new_spin
+    this.current_piece.spin = new_spin
     this.redraw()
   }
   moveCurrent(dindex) {

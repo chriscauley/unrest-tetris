@@ -19,12 +19,12 @@ const Piece = {
   z: {
     dxs: [0, -1, 1, 0],
     dys: [0, 0, 1, 1],
-    max_spin: 4,
+    max_spin: 2,
   },
   s: {
     dxs: [0, 1, -1, 0],
     dys: [0, 0, 1, 1],
-    max_spin: 4,
+    max_spin: 2,
   },
   i: {
     dxs: [0, 1, -1, 2],
