@@ -4,19 +4,28 @@ import mitt from 'mitt'
 import Hash from 'object-hash'
 
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
+const WALL = 'W'
 
 export default class Board {
   constructor({ actions, hash, id, ...options } = {}) {
     window.b = this
     this.options = options
-    const { W = 10, H = 20 } = options
+    let { W = 10, H = 20 } = options
+
+    // expand geometry for floor and wall
+    H++
+    if (!options.wrap) {
+      W += 2
+    }
+
     const geo = new Geo(W, H)
     Object.assign(this, {
+      WALL,
       id,
       entities: {},
       indexes: {},
       geo,
-      start_xy: options.start_xy || geo.xy2index([Math.floor(W / 2) - 1, 1]),
+      start_index: options.start_index || geo.xy2index([Math.floor(W / 2) - 1, 1]),
       _id: 1,
       xs: range(W),
       actions: [],
@@ -24,6 +33,25 @@ export default class Board {
       ghost: null,
       mitt: mitt(),
     })
+
+    const wall = (this.entities[WALL] = {
+      shape: WALL,
+      id: WALL,
+      indexes: range(W).map((x) => x + (H - 1) * W),
+    })
+    if (!options.wrap) {
+      range(H - 1).map((y) => {
+        wall.indexes.push(y * W)
+        wall.indexes.push(y * W + W - 1)
+      })
+
+      // no longer check wall when removing a line
+      this.xs.shift()
+      this.xs.pop()
+    }
+    wall.block_ids = wall.indexes
+    this._placePiece(WALL, wall.indexes.map(this.geo.index2xy))
+
     if (actions) {
       actions.forEach(({ index, spin }) => {
         this.nextTurn()
@@ -70,10 +98,10 @@ export default class Board {
   addPiece(shape) {
     shape = shape || this.generator()
     const { dxys } = Piece[shape]
-    const xys = dxys.map((dxy) => vector.add(this.geo.index2xy(this.start_xy), dxy))
+    const xys = dxys.map((dxy) => vector.add(this.geo.index2xy(this.start_index), dxy))
     const id = this._id++
     const block_ids = range(xys.length)
-    const piece = { id, shape, spin: 0, index: this.start_xy, indexes: [], block_ids }
+    const piece = { id, shape, spin: 0, index: this.start_index, indexes: [], block_ids }
     this.current_piece = this.entities[id] = piece
 
     this._placePiece(piece.id, xys)
@@ -200,14 +228,16 @@ export default class Board {
     })
     const new_entries = Object.entries(this.indexes).map(([index, piece_id]) => {
       index = Number(index)
-      if (index < min_index) {
+      if (piece_id !== this.WALL && index < min_index) {
         index += W
       }
       return [index, piece_id]
     })
     this.indexes = Object.fromEntries(new_entries)
     Object.values(this.entities).forEach((piece) => {
-      piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
+      if (piece.id !== this.WALL) {
+        piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
+      }
     })
   }
   doAction(action, ...args) {

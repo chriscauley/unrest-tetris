@@ -2,16 +2,19 @@ import Board from '../src/lib/Board'
 import Piece from '../src/lib/Piece'
 
 const print = (board) => console.log(board.geo.print(board.indexes, { empty: 'X' })) // eslint-disable-line
+const reducedIndexes = board => Object.fromEntries(
+  Object.entries(board.indexes).filter(e => e[1] !== board.WALL)
+)
 
 test('Board.rotateCurrent', () => {
   const results = {}
   Piece.all.forEach((piece) => {
     const board = new Board()
     board.addPiece(piece.shape)
-    results[piece.shape] = Object.keys(board.indexes).join(',')
+    results[piece.shape] = Object.keys(reducedIndexes(board)).join(',')
     for (let i = 0; i < 4; i++) {
       board.rotateCurrent(1)
-      results[piece.shape] += '|' + Object.keys(board.indexes).join(',')
+      results[piece.shape] += '|' + Object.keys(reducedIndexes(board)).join(',')
     }
   })
   expect(results).toMatchSnapshot()
@@ -37,8 +40,8 @@ test('Board.dropCurrent', () => {
 })
 
 test('Board.options', () => {
-  const board = new Board({ W: 6, H: 6 })
-  expect(board.geo.AREA).toBe(36)
+  const board = new Board({ W: 6, H: 6, wrap: true })
+  expect(board.geo.AREA).toBe(42)
 })
 
 test('Board.clearLine', () => {
@@ -62,7 +65,7 @@ test('Board.clearLine', () => {
   placePiece('i', -4, true)
 
   board.nextTurn()
-  expect(board.indexes).toMatchSnapshot()
+  expect(reducedIndexes(board)).toMatchSnapshot()
 
   // pieces 1 and 2 were cleared
   expect(board.entities[1]).toBe(undefined)
