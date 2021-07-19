@@ -43,25 +43,7 @@ export default class Board {
 
     this.cacheRotations()
 
-    const wall = (this.entities[WALL] = {
-      shape: WALL,
-      id: WALL,
-      indexes: range(W).map((x) => x + (H - 1) * W),
-    })
-    if (!options.wrap) {
-      range(H - 1).map((y) => {
-        wall.indexes.push(y * W)
-        wall.indexes.push(y * W + W - 1)
-      })
-
-      // no longer check wall when removing a line
-      this.xs.shift()
-      this.xs.pop()
-    }
-
-    wall.block_ids = range(wall.indexes.length)
-    this._placePiece(WALL, wall.indexes)
-
+    this.makeWall()
     this.makeAsh()
 
     const { actions, hash } = this.options
@@ -99,9 +81,31 @@ export default class Board {
     )
   }
 
+  makeWall() {
+    const { H, W } = this.geo
+    const wall = (this.entities[WALL] = {
+      shape: WALL,
+      id: WALL,
+      indexes: range(W).map((x) => x + (H - 1) * W),
+    })
+    if (!this.options.wrap) {
+      range(H - 1).map((y) => {
+        wall.indexes.push(y * W)
+        wall.indexes.push(y * W + W - 1)
+      })
+
+      // no longer check wall when removing a line
+      this.xs.shift()
+      this.xs.pop()
+    }
+
+    wall.block_ids = range(wall.indexes.length)
+    this._placePiece(WALL, wall.indexes)
+  }
+
   makeAsh() {
-    const { b } = this.options
-    if (!b?.lines) {
+    const { b = {} } = this.options
+    if (!b.lines || !b.algorithm) {
       return
     }
     const ash = (this.entities[ASH] = {
@@ -124,6 +128,7 @@ export default class Board {
     ash.block_ids = range(ash.indexes.length)
     this._placePiece(ASH, ash.indexes)
   }
+
   start() {
     this.setLevel(1)
     // this.resume()
