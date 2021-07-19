@@ -8,7 +8,7 @@
         <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
       </template>
       <text v-for="block in text_blocks" v-bind="block" :key="block.key">
-        {{ block.key }}
+        {{ block.text }}
       </text>
     </g>
     <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale}) scale(0.75)`">
@@ -48,13 +48,14 @@ export default {
     text_blocks() {
       const blocks = []
       const { text } = this.$store.debug.state
-      if (text === 'piece_index') {
+      if (['piece_id', 'block_id'].includes(text)) {
         this.prepped_pieces.forEach((piece) => {
-          piece.blocks.forEach((block) =>
+          piece.blocks.forEach((block, block_id) =>
             blocks.push({
               x: block.x,
-              y: block.y + this.scale / 2,
+              y: block.y + (this.scale * 2) / 3,
               key: block.key,
+              text: text === 'block_id' ? block_id : piece.id,
             }),
           )
         })
@@ -63,8 +64,9 @@ export default {
           const xy = this.game.board.geo.index2xy(i)
           blocks.push({
             x: xy[0] * this.scale + this.buffer,
-            y: xy[1] * this.scale + this.buffer + this.scale / 2,
+            y: xy[1] * this.scale + this.buffer + (this.scale * 2) / 3,
             key: i,
+            text: i,
           })
         })
       }

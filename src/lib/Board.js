@@ -59,7 +59,7 @@ export default class Board {
       this.xs.pop()
     }
 
-    wall.block_ids = wall.indexes
+    wall.block_ids = range(wall.indexes.length)
     this._placePiece(WALL, wall.indexes)
 
     this.makeAsh()
@@ -121,7 +121,7 @@ export default class Board {
       removes[i] = true
     }
     ash.indexes = ash.indexes.filter((_, i) => !removes[i])
-    ash.block_ids = ash.indexes
+    ash.block_ids = range(ash.indexes.length)
     this._placePiece(ASH, ash.indexes)
   }
   start() {
