@@ -1,5 +1,8 @@
 <template>
   <svg v-bind="svg" tabindex="0" @focus="focus" @blur="blur">
+    <g transform="scale(0.75)">
+      <rect v-for="block in stash_blocks" v-bind="block" :key="block.key" />
+    </g>
     <g :transform="`translate(${4 * scale}, ${scale})`">
       <template v-for="piece in prepped_pieces" :key="piece.id">
         <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
@@ -8,7 +11,7 @@
         {{ block.key }}
       </text>
     </g>
-    <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale})`">
+    <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale}) scale(0.75)`">
       <template v-for="piece in queued_pieces" :key="piece.id">
         <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
       </template>
@@ -37,6 +40,7 @@ export default {
         keydown: () => this.input('drop'),
         keyup: () => this.input('lock'),
       },
+      z: () => this.input('swap'),
     }
     return { game, scale: 30, buffer: 2, mousetrap, hash: null }
   },
@@ -108,6 +112,21 @@ export default {
           key: `queue-${iy}-${[x, y]}`,
           fill: Palette.default[shape],
         })),
+      }))
+    },
+    stash_blocks() {
+      const shape = this.game.board.stash
+      if (!shape) {
+        return
+      }
+      const { buffer, scale } = this
+      return Piece[shape].dxys.map(([x, y]) => ({
+        x: (2 + x) * scale + buffer,
+        y: (2 + y) * scale + buffer,
+        width: scale - 2 * buffer,
+        height: scale - 2 * buffer,
+        key: `stash-${[x, y]}`,
+        fill: Palette.default[shape],
       }))
     },
     pieces() {

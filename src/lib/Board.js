@@ -65,13 +65,20 @@ export default class Board {
     this.makeAsh()
 
     const { actions, hash } = this.options
+    this.nextTurn()
     if (actions) {
-      actions.forEach(({ index, spin }) => {
-        this.nextTurn()
-        this.current_piece.index = index
-        this.rotateCurrent(spin)
+      let new_hash
+      actions.forEach(({ index, spin, swap }) => {
+        if (swap) {
+          this.swap()
+        } else {
+          this.current_piece.index = index
+          this.rotateCurrent(spin)
+          this.nextTurn()
+          new_hash = Hash(this.indexes)
+        }
       })
-      if (hash !== Hash(this.indexes)) {
+      if (hash !== new_hash) {
         console.warn('hash mis-match')
       }
     }
@@ -79,13 +86,15 @@ export default class Board {
 
   print() {
     console.log( // eslint-disable-line
-      Object.fromEntries(
-        Object.entries(this.indexes).map(([index, piece_id]) => {
-          if ([WALL, ASH].includes(piece_id)) {
-            return [index, piece_id]
-          }
-          return [index, alphanum[piece_id % alphanum.length]]
-        }),
+      this.geo.print(
+        Object.fromEntries(
+          Object.entries(this.indexes).map(([index, piece_id]) => {
+            if ([WALL, ASH].includes(piece_id)) {
+              return [index, piece_id]
+            }
+            return [index, alphanum[piece_id % alphanum.length]]
+          }),
+        ),
       ),
     )
   }
@@ -118,16 +127,24 @@ export default class Board {
   start() {
     this.setLevel(1)
     // this.resume()
-    this.nextTurn()
+    // this.nextTurn()
   }
   serialize() {
     const { actions, id } = this
     const hash = Hash(this.indexes)
-    return { actions, hash, id, ...this.options }
+    return { ...this.options, actions, hash, id }
   }
   setLevel(level) {
     this.level = level
     this.game_speed = 500
+  }
+  swap() {
+    const { shape, indexes, id } = this.current_piece
+    indexes.forEach((i) => delete this.indexes[i])
+    delete this.entities[id]
+    this.addPiece(this.stash)
+    this.stash = shape
+    this.actions.push({ swap: true })
   }
   nextTurn() {
     const piece = this.current_piece
@@ -146,13 +163,13 @@ export default class Board {
       const { index, spin } = this.current_piece
       this.actions.push({ index, spin })
     }
-    this.mitt.emit('save')
     this.addPiece()
+    this.mitt.emit('save')
     this.redraw()
   }
   addPiece(shape) {
     if (!shape) {
-      while (this.piece_queue.length < 8) {
+      while (this.piece_queue.length < 9) {
         this.piece_queue.push(this.generator())
       }
       shape = this.piece_queue.shift()

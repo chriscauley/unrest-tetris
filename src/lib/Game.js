@@ -19,6 +19,7 @@ export default class Game {
       down: ['moveCurrentDown'],
       drop: ['dropCurrent'],
       lock: ['nextTurn'],
+      swap: ['swap'],
     }
     this.board.doAction(...actions[action])
   }
