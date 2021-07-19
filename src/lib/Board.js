@@ -130,7 +130,6 @@ export default class Board {
   }
 
   start() {
-    this.setLevel(1)
     // this.resume()
     // this.nextTurn()
   }
@@ -139,10 +138,6 @@ export default class Board {
     const hash = Hash(this.indexes)
     return { ...this.options, actions, hash, id }
   }
-  setLevel(level) {
-    this.level = level
-    this.game_speed = 500
-  }
   swap() {
     const { shape, indexes, id } = this.current_piece
     indexes.forEach((i) => delete this.indexes[i])
@@ -150,6 +145,7 @@ export default class Board {
     this.addPiece(this.stash)
     this.stash = shape
     this.actions.push({ swap: true })
+    this.redraw()
   }
   nextTurn() {
     const piece = this.current_piece
@@ -329,16 +325,21 @@ export default class Board {
       this[action](...args)
     } catch (e) {}
   }
+
   tick() {
-    clearTimeout(this.timeout)
+    cancelAnimationFrame(this._frame)
     this.moveCurrentDown()
-    this.timeout = setTimeout(() => this.tick(), this.game_speed)
+    this._frame = requestAnimationFrame(() => this.tick())
   }
+
   pause() {
-    clearTimeout(this.timeout)
+    cancelAnimationFrame(this._frame)
+    this._paused_at = new Date().valueOf()
   }
+
   resume() {
-    clearTimeout(this.timeout)
-    this.timeout = setTimeout(() => this.tick(), this.game_speed)
+    cancelAnimationFrame(this._frame)
+    this._last_move_at = new Date().valueOf() - (this.paused_at - this.last_move_at)
+    this._frame = requestAnimationFrame(() => this.tick())
   }
 }

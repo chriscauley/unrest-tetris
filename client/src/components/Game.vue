@@ -1,22 +1,31 @@
 <template>
-  <svg v-bind="svg" tabindex="0" @focus="focus" @blur="blur">
-    <g transform="scale(0.75)">
-      <rect v-for="block in stash_blocks" v-bind="block" :key="block.key" />
-    </g>
-    <g :transform="`translate(${4 * scale}, ${scale})`">
-      <template v-for="piece in prepped_pieces" :key="piece.id">
-        <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
+  <div class="game__wrapper">
+    <svg v-bind="svg" tabindex="0" @blur="pause">
+      <rect stroke="black" stroke-width="4" :width="scale * 4" :height="scale * 4" fill="none" />
+      <g transform="scale(0.75)">
+        <rect v-for="block in stash_blocks" v-bind="block" :key="block.key" />
+      </g>
+      <g :transform="`translate(${4 * scale}, ${scale})`">
+        <template v-for="piece in prepped_pieces" :key="piece.id">
+          <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
+        </template>
+        <text v-for="block in text_blocks" v-bind="block" :key="block.key">
+          {{ block.text }}
+        </text>
+      </g>
+      <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale}) scale(0.75)`">
+        <template v-for="piece in queued_pieces" :key="piece.id">
+          <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
+        </template>
+      </g>
+    </svg>
+    <unrest-modal v-if="paused" class="game__paused -absolute">
+      <template #actions>
+        <button class="btn -secondary" @click="clone">Clone</button>
+        <button class="btn -primary" @click="resume">Resume</button>
       </template>
-      <text v-for="block in text_blocks" v-bind="block" :key="block.key">
-        {{ block.text }}
-      </text>
-    </g>
-    <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale}) scale(0.75)`">
-      <template v-for="piece in queued_pieces" :key="piece.id">
-        <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
-      </template>
-    </g>
-  </svg>
+    </unrest-modal>
+  </div>
 </template>
 
 <script>
@@ -41,8 +50,9 @@ export default {
         keyup: () => this.input('lock'),
       },
       z: () => this.input('swap'),
+      escape: () => this.[this.game.paused ? 'resume' : 'pause']()
     }
-    return { game, scale: 30, buffer: 2, mousetrap, hash: null }
+    return { game, scale: 30, buffer: 2, mousetrap, hash: null, paused: false }
   },
   computed: {
     text_blocks() {
@@ -150,16 +160,31 @@ export default {
       }))
     },
   },
+  mounted() {
+    window.addEventListener('blur', this.pause)
+  },
+  unmounted() {
+    window.removeEventListener('blur', this.pause)
+  },
   methods: {
     input(action) {
       this.game.input(action)
-      this.hash = Math.random()
+      this.hash = Math.random() // TODO sloppy force re-render
     },
-    focus() {
-      // this.game.pause()
+    pause() {
+      // TODO should be this.game.paused, but for some reason the modal isn't listening to that
+      this.paused = true
+      this.game.pause()
     },
-    blur() {
-      // this.game.resume()
+    resume() {
+      this.paused = false
+      this.game.resume()
+    },
+    clone() {
+      const { id, hash, actions, ...options } = this.saved_game // eslint-disable-line
+      this.$store.game.save(options).then((data) => {
+        this.$router.push(`/play/tetris/${data.id}/`)
+      })
     },
   },
 }
