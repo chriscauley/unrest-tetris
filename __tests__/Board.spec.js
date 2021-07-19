@@ -7,13 +7,12 @@ const reducedIndexes = (board) =>
 
 test('Board.rotateCurrent', () => {
   const results = {}
-  Piece.all.forEach((piece) => {
-    const board = new Board()
-    board.addPiece(piece.shape)
-    results[piece.shape] = Object.keys(reducedIndexes(board)).join(',')
+  Piece.shapes.forEach((shape) => {
+    const board = new Board({ seed: shape })
+    results[shape] = Object.keys(reducedIndexes(board)).join(',')
     for (let i = 0; i < 4; i++) {
       board.rotateCurrent(1)
-      results[piece.shape] += '|' + Object.keys(reducedIndexes(board)).join(',')
+      results[shape] += '|' + Object.keys(reducedIndexes(board)).join(',')
     }
   })
   expect(results).toMatchSnapshot()
@@ -24,12 +23,12 @@ test('Board.dropCurrent', () => {
   const results = {}
   Piece.all.forEach((piece) => {
     results[piece.shape] = 0
-    const board = new Board()
+    const board = new Board({ seed: piece.shape })
     while (results[piece.shape]++ < 30) {
       try {
-        board.addPiece(piece.shape)
         board.rotateCurrent(1)
         board.dropCurrent()
+        board.nextTurn()
       } catch (_e) {
         break
       }
@@ -44,26 +43,25 @@ test('Board.options', () => {
 })
 
 test('Board.clearLine', () => {
-  const board = new Board({ seed: 'i' })
-  const placePiece = (shape, dindex, rotate) => {
-    board.addPiece(shape)
+  const board = new Board({ seed: 'iiitttti' })
+  const placePiece = (dindex, rotate) => {
     rotate && board.rotateCurrent(1)
     board.moveCurrent(dindex)
     board.dropCurrent()
+    board.nextTurn()
   }
 
-  placePiece('i', 3)
-  placePiece('i', -1)
-  placePiece('i', -3, true)
+  placePiece(3)
+  placePiece(-1)
+  placePiece(-3, true)
 
-  placePiece('t', -2, true)
-  placePiece('t', 0, true)
-  placePiece('t', 2, true)
-  placePiece('t', 4, true)
+  placePiece(-2, true)
+  placePiece(0, true)
+  placePiece(2, true)
+  placePiece(4, true)
 
-  placePiece('i', -4, true)
+  placePiece(-4, true)
 
-  board.nextTurn()
   expect(reducedIndexes(board)).toMatchSnapshot()
 
   // pieces 1 and 2 were cleared

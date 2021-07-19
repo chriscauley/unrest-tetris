@@ -23,13 +23,13 @@ Object {
 
 exports[`Board.dropCurrent 1`] = `
 Object {
-  "i": 6,
+  "i": 5,
   "j": 7,
   "l": 7,
-  "o": 10,
-  "s": 10,
+  "o": 9,
+  "s": 9,
   "t": 7,
-  "z": 10,
+  "z": 9,
 }
 `;
 
