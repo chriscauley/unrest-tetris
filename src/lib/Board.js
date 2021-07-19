@@ -9,8 +9,10 @@ const range = (len) => new Array(len).fill(0).map((_, i) => i)
 const WALL = 'W'
 const ASH = 'A'
 
+const alphanum = '1234567890abcdefghijklmnopqrstuvwxyz'
+
 export default class Board {
-  constructor({ actions, hash, id, ...options } = {}) {
+  constructor({ id, ...options } = {}) {
     window.b = this
     this.options = options
     let { W = 10, H = 20 } = options
@@ -62,6 +64,7 @@ export default class Board {
 
     this.makeAsh()
 
+    const { actions, hash } = this.options
     if (actions) {
       actions.forEach(({ index, spin }) => {
         this.nextTurn()
@@ -72,6 +75,19 @@ export default class Board {
         console.warn('hash mis-match')
       }
     }
+  }
+
+  print() {
+    console.log( // eslint-disable-line
+      Object.fromEntries(
+        Object.entries(this.indexes).map(([index, piece_id]) => {
+          if ([WALL, ASH].includes(piece_id)) {
+            return [index, piece_id]
+          }
+          return [index, alphanum[piece_id % alphanum.length]]
+        }),
+      ),
+    )
   }
 
   makeAsh() {
@@ -118,10 +134,14 @@ export default class Board {
     if (piece) {
       const ys = [...new Set(piece.indexes.map(this.geo.index2xy).map((xy) => xy[1]))]
       const delete_ys = ys.filter((y) => {
-        const first_empty_x = this.xs.find((x) => !this.indexes[this.geo.xy2index([x, y])])
-        return first_empty_x === undefined
+        for (let x of this.xs) {
+          if (!this.indexes[this.geo.xy2index([x, y])]) {
+            return false
+          }
+        }
+        return true
       })
-      delete_ys.sort()
+      delete_ys.sort((a, b) => a - b)
       delete_ys.forEach((y) => this.removeLine(y))
       const { index, spin } = this.current_piece
       this.actions.push({ index, spin })
