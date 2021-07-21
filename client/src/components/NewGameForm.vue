@@ -20,11 +20,11 @@ export default {
     },
     submit() {
       this.update()
-      const { b } = this.state
+      const { a, b, sticky } = this.state
       const seed = this.state.seed || new Date().valueOf() % 256
       b.seed = b.seed || new Date().valueOf() % 256
       this.$ui.alert()
-      this.$store.game.save({ seed, b }).then((data) => {
+      this.$store.game.save({ seed, a, b, sticky }).then((data) => {
         this.$router.push(`/play/tetris/${data.id}/`)
       })
     },

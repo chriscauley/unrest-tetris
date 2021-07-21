@@ -107,6 +107,30 @@ export default class Board {
     this._placePiece(WALL, wall.indexes)
   }
 
+  checkSticky(piece) {
+    const merge = {}
+    piece.indexes.forEach((index) => {
+      this.geo.dindexes.forEach((dindex) => {
+        const target_index = index + dindex
+        const target_id = this.indexes[target_index]
+        const target = this.entities[target_id]
+        if (target && target !== piece && target.shape === piece.shape) {
+          merge[target_id] = target
+        }
+      })
+    })
+    Object.values(merge).forEach((target_piece) => {
+      piece.indexes = piece.indexes.concat(target_piece.indexes)
+      const max = Math.max(...piece.indexes)
+      piece.block_ids = range(piece.indexes.length).map((i) => i + max)
+      target_piece.indexes.forEach((i) => delete this.indexes[i])
+      delete this.entities[target_piece.id]
+    })
+    if (Object.keys(merge).length > 0) {
+      this._placePiece(piece.id, piece.indexes)
+    }
+  }
+
   makeAsh() {
     const { b = {} } = this.options
     if (!b.lines || !b.algorithm) {
@@ -172,6 +196,7 @@ export default class Board {
       delete_ys.forEach((y) => this.removeLine(y))
       const { index, spin } = this.current_piece
       this.actions.push({ index, spin })
+      this.checkSticky(this.current_piece)
     }
     delete this._dropping // see note in this.lock
     this.addPiece()
@@ -191,7 +216,7 @@ export default class Board {
     const dindexes = dxys.map(this.geo.dxy2dindex)
     const indexes = dindexes.map((dindex) => dindex + this.start_index)
     const id = this._id++
-    const block_ids = range(indexes.length)
+    const block_ids = range(indexes.length).map((i) => i + 4 * id)
     const piece = { id, shape, spin: 0, index: this.start_index, indexes: [], block_ids }
     this.current_piece = this.entities[id] = piece
 

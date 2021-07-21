@@ -16,6 +16,7 @@ store.schema = {
     lines: 0,
     seed: '',
   },
+  sticky: false,
 }
 
 export default store

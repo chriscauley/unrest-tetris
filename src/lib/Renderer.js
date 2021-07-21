@@ -128,7 +128,7 @@ export default (board) => {
       piece_queue: getCached('queue', () => renderQueue(board)),
       stash: getCached('stash', () => renderStash(board)),
       frame_number: frames.length,
-      delay: delay * 5,
+      delay: delay * 1,
       ghost: renderGhost(board),
     }
     frames.push(new_frame)
@@ -143,7 +143,7 @@ export default (board) => {
     next(callback) {
       if (current_frame < frames.length - 1 && !board._paused_at) {
         current_frame++
-        setTimeout(callback, frames[current_frame]?.delay)
+        setTimeout(callback, frames[current_frame]?.delay / 2)
       }
       return frames[current_frame]
     },
