@@ -107,7 +107,57 @@ export default class Board {
     this._placePiece(WALL, wall.indexes)
   }
 
-  checkSticky(piece) {
+  _checkAndSplit(piece) {
+    const _checked = {}
+    const keep = []
+    const _check = (index) => {
+      if (_checked[index] || this.indexes[index] !== piece.id) {
+        return
+      }
+      keep.push(index)
+      _checked[index] = true
+      this.geo.dindexes.forEach((dindex) => _check(dindex + index))
+    }
+    _check(piece.indexes[0])
+    if (keep.length !== piece.indexes.length) {
+      const remaining = piece.indexes.filter((i) => !keep.includes(i))
+      piece.block_ids = keep.map((index) => piece.block_ids[piece.indexes.indexOf(index)])
+      piece.indexes = keep
+      this._placePiece(piece.id, piece.indexes)
+
+      remaining.forEach((i) => delete this.indexes[i])
+      const new_piece = {
+        id: this._id++,
+        shape: piece.shape,
+        index: remaining[0],
+        indexes: remaining,
+        block_ids: range(remaining.length),
+      }
+      this.entities[new_piece.id] = new_piece
+      this._placePiece(new_piece.id, remaining)
+      this._checkAndSplit(new_piece)
+    }
+  }
+
+  splitAndMerge(_max_y) {
+    // first split any pieces that have lost blocks
+    Object.keys(this._removed_pieces_by_id)
+      .map((i) => this.entities[i])
+      .filter((piece) => piece && piece.id !== ASH)
+      .forEach((piece) => this._checkAndSplit(piece))
+
+    // TODO this would be optimized a bit by only checking above _max_y
+    if (this.options.sticky) {
+      Object.values(this.entities).forEach((piece) => {
+        if (this.entities[piece.id]) {
+          // piece may have been deleted in previous iterations!
+          this.checkAndStick(piece)
+        }
+      })
+    }
+  }
+
+  checkAndStick(piece) {
     const merge = {}
     piece.indexes.forEach((index) => {
       this.geo.dindexes.forEach((dindex) => {
@@ -192,11 +242,12 @@ export default class Board {
         }
         return true
       })
+      this._removed_pieces_by_id = {}
       delete_ys.sort((a, b) => a - b)
       delete_ys.forEach((y) => this.removeLine(y))
       const { index, spin } = this.current_piece
       this.actions.push({ index, spin })
-      this.checkSticky(this.current_piece)
+      this.splitAndMerge(Math.max(...ys))
     }
     delete this._dropping // see note in this.lock
     this.addPiece()
@@ -344,6 +395,8 @@ export default class Board {
         // piece.indexes = piece.indexes.filter((i) => i !== index)
         if (!piece.indexes.length) {
           delete this.entities[piece_id]
+        } else {
+          this._removed_pieces_by_id[piece_id] = piece
         }
       }
     })

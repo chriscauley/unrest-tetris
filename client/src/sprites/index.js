@@ -13,19 +13,22 @@ export default (scale, buffer) => {
           io.forEach((bottom) => {
             const id = `${shape}-${top}${left}${right}${bottom}`
             const g = snap.g()
-            const x = (i % 8) * scale
-            const y = Math.floor(i / 8) * scale
-            g.attr({ id, x, y })
+            g.attr({ id })
             const _rect = (fill, x, y, w, h) => {
               const r = snap.rect(x, y, w, h)
               r.attr({ fill })
               g.add(r)
             }
+
+            // A doesn't look good all merged up
+            const _top = top || shape === 'A'
+            const _bottom = bottom || shape === 'A'
+
             _rect(Palette.default[shape], 0, 0, scale, scale)
-            top && _rect('black', 0, 0, scale, buffer)
+            _top && _rect('black', 0, 0, scale, buffer)
             left && _rect('black', 0, 0, buffer, scale)
             right && _rect('black', _sb, 0, buffer, scale)
-            bottom && _rect('black', 0, _sb, scale, buffer)
+            _bottom && _rect('black', 0, _sb, scale, buffer)
 
             _rect('black', 0, 0, buffer, buffer)
             _rect('black', 0, _sb, buffer, buffer)
