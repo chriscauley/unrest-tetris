@@ -6,7 +6,7 @@ store.schema = {
   type: 'lazy',
   text: {
     type: 'string',
-    enum: ['', 'piece_id', 'block_id', 'board_index'],
+    enum: ['', 'piece_id', 'block_id', 'block_key', 'board_index', 'block_connect'],
   },
 }
 

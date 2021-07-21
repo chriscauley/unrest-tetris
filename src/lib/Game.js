@@ -7,7 +7,7 @@ const actions = {
   right: ['moveCurrentRight'],
   down: ['moveCurrentDown'],
   drop: ['dropCurrent'],
-  lock: ['nextTurn'],
+  lock: ['lock'],
   pause: ['pause'],
   swap: ['swap'],
 }
@@ -24,8 +24,8 @@ export default class Game {
     }
   }
   reset() {
-    const { seed, id, actions, hash, b } = this.options
-    this.board = new Board({ seed, id, actions, hash, b })
+    const { seed, id, actions, hash, b, buffer, scale } = this.options
+    this.board = new Board({ seed, id, actions, hash, b, buffer, scale })
     this.board.start()
   }
   input(action) {

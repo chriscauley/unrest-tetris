@@ -4,6 +4,7 @@ import Hash from 'object-hash'
 
 import Piece from './Piece'
 import Btype from './Btype'
+import Renderer from './Renderer'
 
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
 const WALL = 'W'
@@ -12,7 +13,7 @@ const ASH = 'A'
 const alphanum = '1234567890abcdefghijklmnopqrstuvwxyz'
 
 export default class Board {
-  constructor({ id, ...options } = {}) {
+  constructor({ id, scale = 1, buffer = 0, ...options } = {}) {
     window.b = this
     this.options = options
     let { W = 10, H = 20 } = options
@@ -39,6 +40,9 @@ export default class Board {
       ghost: null,
       mitt: mitt(),
       piece_queue: [],
+      renderer: Renderer(this),
+      scale,
+      buffer,
     })
 
     this.cacheRotations()
@@ -133,20 +137,25 @@ export default class Board {
     // this.resume()
     // this.nextTurn()
   }
+
   serialize() {
     const { actions, id } = this
     const hash = Hash(this.indexes)
     return { ...this.options, actions, hash, id }
   }
+
   swap() {
+    delete this._dropping // see note in this.lock
     const { shape, indexes, id } = this.current_piece
     indexes.forEach((i) => delete this.indexes[i])
     delete this.entities[id]
     this.addPiece(this.stash)
     this.stash = shape
     this.actions.push({ swap: true })
+    this.renderer.markStale('stash')
     this.redraw()
   }
+
   nextTurn() {
     const piece = this.current_piece
     if (piece) {
@@ -164,16 +173,19 @@ export default class Board {
       const { index, spin } = this.current_piece
       this.actions.push({ index, spin })
     }
+    delete this._dropping // see note in this.lock
     this.addPiece()
     this.mitt.emit('save')
-    this.redraw()
+    this.redraw(200)
   }
+
   addPiece(shape) {
     if (!shape) {
       while (this.piece_queue.length < 9) {
         this.piece_queue.push(this.generator())
       }
       shape = this.piece_queue.shift()
+      this.renderer.markStale('queue')
     }
     const { dxys } = Piece[shape]
     const dindexes = dxys.map(this.geo.dxy2dindex)
@@ -185,6 +197,7 @@ export default class Board {
 
     this._placePiece(piece.id, indexes)
   }
+
   cacheRotations() {
     this._rotation_cache = {}
     Piece.all.forEach(({ shape, dxys, max_spin }) => {
@@ -205,6 +218,7 @@ export default class Board {
       })
     })
   }
+
   rotateCurrent(dspin) {
     const { shape, index, spin, id } = this.current_piece
 
@@ -216,12 +230,14 @@ export default class Board {
     this.current_piece.spin = new_spin
     this.redraw()
   }
+
   moveCurrent(dindex) {
     const piece = this.current_piece
     const new_indexes = piece.indexes.map((i) => i + dindex)
     this._placePiece(piece.id, new_indexes)
     piece.index += dindex
   }
+
   moveCurrentDown() {
     // down has the potential to lock and clear (next turn)
     try {
@@ -231,36 +247,21 @@ export default class Board {
     }
     this.redraw()
   }
+
   moveCurrentLeft() {
     this.moveCurrent(-1)
     this.redraw()
   }
+
   moveCurrentRight() {
     this.moveCurrent(1)
     this.redraw()
   }
-  redraw() {
-    this.ghost = this.current_piece.indexes
-    const { W, H } = this.geo
-    const max_index = W * H - 1
-    let _h = H
-    while (_h--) {
-      const new_ghost = this.ghost.map((i) => i + W)
-      const collides = new_ghost.find((index) => {
-        if (index > max_index) {
-          return true
-        }
-        if (this.indexes[index] === undefined) {
-          return false
-        }
-        return this.indexes[index] !== this.current_piece.id
-      })
-      if (collides !== undefined) {
-        break
-      }
-      this.ghost = new_ghost
-    }
+
+  redraw(delay) {
+    this.renderer.draw(delay)
   }
+
   _placePiece(piece_id, new_indexes) {
     if (new_indexes.map((index) => this.indexes[index]).find((id) => id && id !== piece_id)) {
       throw 'Unable to place piece due to collision'
@@ -270,8 +271,11 @@ export default class Board {
     piece.indexes.forEach((index) => delete this.indexes[index])
     new_indexes.forEach((index) => (this.indexes[index] = piece.id))
     piece.indexes = new_indexes
+    this.renderer.markStale(piece.id)
   }
+
   dropCurrent() {
+    this._dropping = true
     for (let dy = 0; dy < this.geo.H; dy++) {
       try {
         this.moveCurrent(this.geo.W)
@@ -279,7 +283,19 @@ export default class Board {
         continue
       }
     }
+    this.redraw()
   }
+
+  lock() {
+    // don't "lock" if someone drops (keydown.space), then swaps, then locks (keyup.space)
+    if (this._dropping) {
+      this.dropCurrent()
+      this.nextTurn()
+    }
+
+    delete this._dropping
+  }
+
   removeLine(y) {
     const moved = {}
     const { W, xy2index } = this.geo
@@ -289,6 +305,7 @@ export default class Board {
       const piece_id = this.indexes[index]
       delete this.indexes[index]
       if (!moved[piece_id]) {
+        this.renderer.markStale(piece_id)
         const piece = this.entities[piece_id]
         const delete_blocks = []
         piece.indexes.forEach((i, block_index) => {
@@ -296,9 +313,8 @@ export default class Board {
             delete_blocks.push(block_index)
           }
         })
-        piece.indexes = piece.indexes.filter(
-          (_, block_index) => !delete_blocks.includes(block_index),
-        )
+        piece.indexes = piece.indexes.filter((_, _index) => !delete_blocks.includes(_index))
+        piece.block_ids = piece.block_ids.filter((_, _index) => !delete_blocks.includes(_index))
         moved[piece_id] = true
         // piece.indexes = piece.indexes.filter((i) => i !== index)
         if (!piece.indexes.length) {
@@ -316,10 +332,12 @@ export default class Board {
     this.indexes = Object.fromEntries(new_entries)
     Object.values(this.entities).forEach((piece) => {
       if (piece.id !== this.WALL) {
+        this.renderer.markStale(piece.id)
         piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
       }
     })
   }
+
   doAction(action, ...args) {
     try {
       this[action](...args)
@@ -328,7 +346,6 @@ export default class Board {
 
   tick() {
     cancelAnimationFrame(this._frame)
-    this.moveCurrentDown()
     this._frame = requestAnimationFrame(() => this.tick())
   }
 
@@ -340,6 +357,7 @@ export default class Board {
   resume() {
     cancelAnimationFrame(this._frame)
     this._last_move_at = new Date().valueOf() - (this.paused_at - this.last_move_at)
+    delete this._paused_at
     this._frame = requestAnimationFrame(() => this.tick())
   }
 }

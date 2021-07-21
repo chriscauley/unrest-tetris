@@ -1,3 +1,7 @@
 .game__wrapper {
   @apply relative
 }
+
+svg rect {
+  transition: y 0.1s;
+}

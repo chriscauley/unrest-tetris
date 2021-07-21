@@ -1,12 +1,12 @@
 <template>
   <div class="game__wrapper">
-    <svg v-bind="svg" tabindex="0" @blur="pause">
+    <svg v-bind="svg" tabindex="0" v-if="frame">
       <rect stroke="black" stroke-width="4" :width="scale * 4" :height="scale * 4" fill="none" />
       <g transform="scale(0.75)">
-        <rect v-for="block in stash_blocks" v-bind="block" :key="block.key" />
+        <rect v-for="block in frame.stash" v-bind="block" :key="block.key" />
       </g>
       <g :transform="`translate(${4 * scale}, ${scale})`">
-        <template v-for="piece in prepped_pieces" :key="piece.id">
+        <template v-for="piece in frame.entities" :key="piece.id">
           <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
         <text v-for="block in text_blocks" v-bind="block" :key="block.key">
@@ -14,7 +14,7 @@
         </text>
       </g>
       <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale}) scale(0.75)`">
-        <template v-for="piece in queued_pieces" :key="piece.id">
+        <template v-for="piece in frame.piece_queue" :key="piece.id">
           <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
       </g>
@@ -29,8 +29,15 @@
 </template>
 
 <script>
-import { Game, Palette, Piece } from '@unrest/tetris'
+import { Game } from '@unrest/tetris'
 import mousetrap from '@unrest/vue-mousetrap'
+
+const getBlockText = (piece, block, text) => {
+  if (text === 'piece_id') {
+    return piece.id
+  }
+  return block[text.replace('block_', '')]
+}
 
 export default {
   mixins: [mousetrap.Mixin],
@@ -38,7 +45,9 @@ export default {
     saved_game: Object,
   },
   data() {
-    const game = new Game(this.saved_game)
+    const buffer = 2
+    const scale = 30
+    const game = new Game({...this.saved_game, buffer, scale })
     game.on('save', () => this.$store.game.save(this.game.board.serialize()))
     const mousetrap = {
       up: () => this.input('rotate'),
@@ -52,20 +61,20 @@ export default {
       z: () => this.input('swap'),
       escape: () => this.[this.game.paused ? 'resume' : 'pause']()
     }
-    return { game, scale: 30, buffer: 2, mousetrap, hash: null, paused: false }
+    return { game, scale, buffer, mousetrap, hash: null, paused: false, frame: null }
   },
   computed: {
     text_blocks() {
       const blocks = []
       const { text } = this.$store.debug.state
-      if (['piece_id', 'block_id'].includes(text)) {
-        this.prepped_pieces.forEach((piece) => {
-          piece.blocks.forEach((block, block_id) =>
+      if (['piece_id', 'block_id', 'block_key'].includes(text)) {
+        this.frame.entities.forEach((piece) => {
+          piece.blocks.forEach((block) =>
             blocks.push({
               x: block.x,
               y: block.y + (this.scale * 2) / 3,
               key: block.key,
-              text: text === 'block_id' ? block_id : piece.id,
+              text: getBlockText(piece, block, text),
             }),
           )
         })
@@ -89,78 +98,9 @@ export default {
         height: (2 + H) * this.scale,
       }
     },
-    prepped_pieces() {
-      const pieces = this.pieces
-      pieces.push(this.ghost)
-      return pieces
-    },
-    ghost() {
-      const { scale, buffer } = this
-      const blocks = this.game.board.ghost?.map((index, i) => {
-        const [x, y] = this.game.board.geo.index2xy(index)
-        return {
-          key: `g-${i}`,
-          x: x * scale + buffer,
-          y: y * scale + buffer,
-          width: scale - 2 * buffer,
-          height: scale - 2 * buffer,
-          fill: 'none',
-          'stroke-width': buffer,
-          stroke: 'gray',
-          'stroke-dasharray': 4,
-        }
-      })
-      return { id: 'ghost', blocks }
-    },
-    queued_pieces() {
-      const { buffer, scale } = this
-      return this.game.board.piece_queue.map((shape, iy) => ({
-        id: `queue-${iy}`,
-        blocks: Piece[shape].dxys.map(([x, y]) => ({
-          x: (2 + x) * scale + buffer,
-          y: (2 + y + 3 * iy) * scale + buffer,
-          width: scale - 2 * buffer,
-          height: scale - 2 * buffer,
-          key: `queue-${iy}-${[x, y]}`,
-          fill: Palette.default[shape],
-        })),
-      }))
-    },
-    stash_blocks() {
-      const shape = this.game.board.stash
-      if (!shape) {
-        return
-      }
-      const { buffer, scale } = this
-      return Piece[shape].dxys.map(([x, y]) => ({
-        x: (2 + x) * scale + buffer,
-        y: (2 + y) * scale + buffer,
-        width: scale - 2 * buffer,
-        height: scale - 2 * buffer,
-        key: `stash-${[x, y]}`,
-        fill: Palette.default[shape],
-      }))
-    },
-    pieces() {
-      const { buffer, scale } = this
-      const { index2xy } = this.game.board.geo
-      return Object.values(this.game.board.entities).map((piece) => ({
-        id: piece.id,
-        blocks: piece.indexes.map((index, i) => {
-          const [x, y] = index2xy(index)
-          return {
-            x: x * scale + buffer,
-            y: y * scale + buffer,
-            width: scale - 2 * buffer,
-            height: scale - 2 * buffer,
-            key: `${piece.id}-${piece.block_ids[i]}`,
-            fill: Palette.default[piece.shape],
-          }
-        }),
-      }))
-    },
   },
   mounted() {
+    this.render()
     window.addEventListener('blur', this.pause)
   },
   unmounted() {
@@ -169,7 +109,10 @@ export default {
   methods: {
     input(action) {
       this.game.input(action)
-      this.hash = Math.random() // TODO sloppy force re-render
+      this.render()
+    },
+    render() {
+      this.frame = this.game.board.renderer.next(this.render)
     },
     pause() {
       // TODO should be this.game.paused, but for some reason the modal isn't listening to that
@@ -179,6 +122,7 @@ export default {
     resume() {
       this.paused = false
       this.game.resume()
+      this.render()
     },
     clone() {
       const { id, hash, actions, ...options } = this.saved_game // eslint-disable-line
