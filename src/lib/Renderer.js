@@ -1,5 +1,16 @@
-import Palette from './Palette'
 import Piece from './Piece'
+import Geo from '@unrest/geo'
+
+const tlrbByShape = {}
+const geo4 = new Geo(4, 4)
+Piece.all.forEach((piece) => {
+  const exists = {}
+  const indexes = piece.dxys.map((dxy) => geo4.dxy2dindex(dxy))
+  piece.dxys.forEach((dxy) => (exists[geo4.xy2index(dxy)] = true))
+  tlrbByShape[piece.shape] = indexes.map((index) =>
+    [-4, -1, 1, 4].map((dindex) => (indexes.includes(dindex + index) ? 0 : 1)).join(''),
+  )
+})
 
 const getGhost = (board) => {
   const { W, H } = board.geo
@@ -45,30 +56,26 @@ const renderGhost = (board) => {
 }
 
 const renderQueue = (board) => {
-  const { buffer, scale } = board
+  const { scale } = board
   return board.piece_queue.map((shape, iy) => ({
     id: `queue-${iy}`,
-    blocks: Piece[shape].dxys.map(([x, y]) => ({
-      x: (2 + x) * scale + buffer,
-      y: (2 + y + 3 * iy) * scale + buffer,
-      width: scale - 2 * buffer,
-      height: scale - 2 * buffer,
+    blocks: Piece[shape].dxys.map(([x, y], i) => ({
+      x: (2 + x) * scale,
+      y: (2 + y + 3 * iy) * scale,
       key: `queue-${iy}-${[x, y]}`,
-      fill: Palette.default[shape],
+      href: `#${shape}-${tlrbByShape[shape][i]}`,
     })),
   }))
 }
 
 const renderStash = (board) => {
   const shape = board.stash
-  const { buffer, scale } = board
-  return Piece[shape]?.dxys.map(([x, y]) => ({
-    x: (2 + x) * scale + buffer,
-    y: (2 + y) * scale + buffer,
-    width: scale - 2 * buffer,
-    height: scale - 2 * buffer,
+  const { scale } = board
+  return Piece[shape]?.dxys.map(([x, y], i) => ({
+    x: (2 + x) * scale,
+    y: (2 + y) * scale,
     key: `stash-${[x, y]}`,
-    fill: Palette.default[shape],
+    href: `#${shape}-${tlrbByShape[shape][i]}`,
   }))
 }
 
@@ -84,8 +91,14 @@ export default (board) => {
     return _cache[key]
   }
 
+  const tlrd = (block_index, piece_id) => {
+    return board.geo.dindexes
+      .map((dindex) => (board.indexes[dindex + block_index] === piece_id ? 0 : 1))
+      .join('')
+  }
+
   const draw = (delay) => {
-    const { scale, buffer } = board
+    const { scale } = board
     const pieces = Object.values(board.entities)
     // clear cache of stale and wet cache
     stale.forEach((id) => delete _cache[id])
@@ -99,12 +112,10 @@ export default (board) => {
           blocks: piece.indexes.map((index, i) => {
             const [x, y] = board.geo.index2xy(index)
             return {
-              x: x * scale + buffer,
-              y: y * scale + buffer,
-              width: scale - 2 * buffer,
-              height: scale - 2 * buffer,
+              x: x * scale,
+              y: y * scale,
               key: `${piece_key}-${piece.block_ids[i]}`,
-              fill: Palette.default[piece.shape],
+              href: `#${piece.shape}-${tlrd(index, piece.id)}`,
             }
           }),
         }
@@ -118,8 +129,8 @@ export default (board) => {
       stash: getCached('stash', () => renderStash(board)),
       frame_number: frames.length,
       delay,
+      ghost: renderGhost(board),
     }
-    new_frame.entities.push(renderGhost(board))
     frames.push(new_frame)
   }
 

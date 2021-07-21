@@ -1,21 +1,22 @@
 <template>
   <div class="game__wrapper">
-    <svg v-bind="svg" tabindex="0" v-if="frame">
+    <svg v-bind="svg" tabindex="0" v-if="frame" ref="svg">
       <rect stroke="black" stroke-width="4" :width="scale * 4" :height="scale * 4" fill="none" />
       <g transform="scale(0.75)">
-        <rect v-for="block in frame.stash" v-bind="block" :key="block.key" />
+        <use v-for="block in frame.stash" v-bind="block" :key="block.key" />
       </g>
       <g :transform="`translate(${4 * scale}, ${scale})`">
         <template v-for="piece in frame.entities" :key="piece.id">
-          <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
+          <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
         <text v-for="block in text_blocks" v-bind="block" :key="block.key">
           {{ block.text }}
         </text>
+        <rect v-for="block in frame.ghost.blocks" v-bind="block" :key="block.key" />
       </g>
       <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale}) scale(0.75)`">
         <template v-for="piece in frame.piece_queue" :key="piece.id">
-          <rect v-for="block in piece.blocks" v-bind="block" :key="block.key" />
+          <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
       </g>
     </svg>
@@ -31,6 +32,7 @@
 <script>
 import { Game } from '@unrest/tetris'
 import mousetrap from '@unrest/vue-mousetrap'
+import makeSprites from '@/sprites'
 
 const getBlockText = (piece, block, text) => {
   if (text === 'piece_id') {
@@ -101,6 +103,7 @@ export default {
   },
   mounted() {
     this.render()
+    makeSprites(this.scale, this.buffer)
     window.addEventListener('blur', this.pause)
   },
   unmounted() {
