@@ -1,5 +1,8 @@
 .game__wrapper {
-  @apply relative
+  @apply relative;
+  &.half_opacity use {
+    opacity: 0.5;
+  }
 }
 
 svg rect {

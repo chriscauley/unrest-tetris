@@ -8,6 +8,7 @@ store.schema = {
     type: 'string',
     enum: ['', 'piece_id', 'block_id', 'block_key', 'board_index', 'block_connect'],
   },
+  half_opacity: false, // used to see overlapping blocks (bad deletions)
 }
 
 export default store

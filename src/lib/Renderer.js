@@ -97,7 +97,7 @@ export default (board) => {
       .join('')
   }
 
-  const draw = (delay) => {
+  const draw = (delay = 0) => {
     const { scale } = board
     const pieces = Object.values(board.entities)
     // clear cache of stale and wet cache
@@ -128,7 +128,7 @@ export default (board) => {
       piece_queue: getCached('queue', () => renderQueue(board)),
       stash: getCached('stash', () => renderStash(board)),
       frame_number: frames.length,
-      delay,
+      delay: delay * 5,
       ghost: renderGhost(board),
     }
     frames.push(new_frame)

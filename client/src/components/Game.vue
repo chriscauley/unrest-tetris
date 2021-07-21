@@ -1,5 +1,5 @@
 <template>
-  <div class="game__wrapper">
+  <div :class="css.root">
     <svg v-bind="svg" tabindex="0" v-if="frame" ref="svg">
       <rect stroke="black" stroke-width="4" :width="scale * 4" :height="scale * 4" fill="none" />
       <g transform="scale(0.75)">
@@ -66,6 +66,12 @@ export default {
     return { game, scale, buffer, mousetrap, hash: null, paused: false, frame: null }
   },
   computed: {
+    css() {
+      const {half_opacity} = this.$store.debug.state
+      return {
+        root: ['game__wrapper', { half_opacity }]
+      }
+    },
     text_blocks() {
       const blocks = []
       const { text } = this.$store.debug.state
