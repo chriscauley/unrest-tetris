@@ -24,8 +24,8 @@ export default class Game {
     }
   }
   reset() {
-    const { seed, id, actions, hash, a, b, sticky, buffer, scale } = this.options
-    this.board = new Board({ seed, id, actions, hash, a, b, sticky, buffer, scale })
+    const { seed, id, actions, hash, a, b, sticky, buffer, scale, collapse } = this.options
+    this.board = new Board({ seed, id, actions, hash, a, b, sticky, buffer, scale, collapse })
     this.board.start()
   }
   input(action) {

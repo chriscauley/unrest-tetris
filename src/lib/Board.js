@@ -10,7 +10,7 @@ const range = (len) => new Array(len).fill(0).map((_, i) => i)
 const WALL = 'W'
 const ASH = 'A'
 
-const alphanum = '1234567890abcdefghijklmnopqrstuvwxyz'
+const alphanum = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 export default class Board {
   constructor({ id, scale = 1, buffer = 0, ...options } = {}) {
@@ -157,6 +157,46 @@ export default class Board {
     }
   }
 
+  checkAndCollapse() {
+    this._fixed_pieces = { [WALL]: true }
+    const { W, H } = this.geo
+    const to_check = range(W).map((i) => i + W * (H - 1))
+    const checked_pieces = {}
+    const checked = {}
+    let _max = 10000 // TODO this is to prevent infinte loop. Can probably be removed
+    while (to_check.length && _max--) {
+      const index = to_check.pop()
+      checked[index] = (checked[index] || 0) + 1
+      checked_pieces[this.indexes[index]] = true
+      const target_index = index - W
+      const target_id = this.indexes[target_index]
+      if (!checked_pieces[target_id]) {
+        const target_piece = this.entities[target_id]
+        target_piece?.indexes.forEach((i) => {
+          to_check.push(i)
+          this._fixed_pieces[target_piece.id] = true
+        })
+      }
+    }
+    if (_max < 1) {
+      // _max is -1 if while loop overflowed
+      throw 'Unable to solve collapse'
+    }
+    const loose_pieces = Object.values(this.entities).filter((p) => !this._fixed_pieces[p.id])
+    loose_pieces.forEach((p) => p.indexes.forEach((i) => delete this.indexes[i]))
+    loose_pieces.forEach((p) =>
+      this._placePiece(
+        p.id,
+        p.indexes.map((i) => i + W),
+      ),
+    )
+    if (loose_pieces.length) {
+      this.redraw(50)
+      this.checkAndCollapse()
+    }
+    return loose_pieces
+  }
+
   checkAndStick(piece) {
     const merge = {}
     piece.indexes.forEach((index) => {
@@ -230,24 +270,34 @@ export default class Board {
     this.redraw()
   }
 
+  updateBoard(pieces) {
+    const indexes = []
+    pieces.forEach((p) => p.indexes.forEach((i) => indexes.push(i)))
+    const ys = [...new Set(indexes.map(this.geo.index2xy).map((xy) => xy[1]))]
+    const delete_ys = ys.filter((y) => {
+      for (let x of this.xs) {
+        if (!this.indexes[this.geo.xy2index([x, y])]) {
+          return false
+        }
+      }
+      return true
+    })
+    this._removed_pieces_by_id = {}
+    delete_ys.sort((a, b) => a - b)
+    delete_ys.forEach((y) => this.removeLine(y))
+    this.splitAndMerge(Math.max(...ys))
+    const collapsed_pieces = delete_ys.length && this.options.collapse && this.checkAndCollapse()
+    if (collapsed_pieces?.length > 0) {
+      this.updateBoard(collapsed_pieces)
+    }
+  }
+
   nextTurn() {
     const piece = this.current_piece
     if (piece) {
-      const ys = [...new Set(piece.indexes.map(this.geo.index2xy).map((xy) => xy[1]))]
-      const delete_ys = ys.filter((y) => {
-        for (let x of this.xs) {
-          if (!this.indexes[this.geo.xy2index([x, y])]) {
-            return false
-          }
-        }
-        return true
-      })
-      this._removed_pieces_by_id = {}
-      delete_ys.sort((a, b) => a - b)
-      delete_ys.forEach((y) => this.removeLine(y))
-      const { index, spin } = this.current_piece
+      const { index, spin } = piece
+      this.updateBoard([piece])
       this.actions.push({ index, spin })
-      this.splitAndMerge(Math.max(...ys))
     }
     delete this._dropping // see note in this.lock
     this.addPiece()
@@ -339,7 +389,11 @@ export default class Board {
   }
 
   _placePiece(piece_id, new_indexes) {
-    if (new_indexes.map((index) => this.indexes[index]).find((id) => id && id !== piece_id)) {
+    const _collide_index = new_indexes.find((index) => {
+      const id = this.indexes[index]
+      return id && id !== piece_id
+    })
+    if (_collide_index !== undefined) {
       throw 'Unable to place piece due to collision'
     }
 

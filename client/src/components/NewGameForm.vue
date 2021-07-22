@@ -1,3 +1,4 @@
+
 <template>
   <div class="modal-content">
     <unrest-form :schema="schema" :state="state" @change="update" @submit="submit">
@@ -20,11 +21,12 @@ export default {
     },
     submit() {
       this.update()
-      const { a, b, sticky } = this.state
-      const seed = this.state.seed || new Date().valueOf() % 256
-      b.seed = b.seed || new Date().valueOf() % 256
+      this.state.seed = this.state.seed || new Date().valueOf() % 256
+      if (this.state.b) {
+        this.state.b.seed = this.state.b.seed || new Date().valueOf() % 256
+      }
       this.$ui.alert()
-      this.$store.game.save({ seed, a, b, sticky }).then((data) => {
+      this.$store.game.save(this.state).then((data) => {
         this.$router.push(`/play/tetris/${data.id}/`)
       })
     },
