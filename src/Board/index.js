@@ -38,7 +38,7 @@ export default class Board {
       _id: 1,
       xs: range(W),
       actions: [],
-      generator: Piece.generator(options.seed),
+      generator: Piece.generator(options.rules.seed),
       ghost: null,
       mitt: mitt(),
       piece_queue: [],
@@ -75,6 +75,10 @@ export default class Board {
         console.warn('hash mis-match')
       }
     }
+  }
+
+  get turn() {
+    return this.actions.length + 1
   }
 
   print() {
@@ -154,7 +158,7 @@ export default class Board {
       .forEach((piece) => this._checkAndSplit(piece))
 
     // TODO this would be optimized a bit by only checking above _max_y
-    if (this.options.sticky) {
+    if (this.options.rules.sticky) {
       Object.values(this.entities).forEach((piece) => {
         if (this.entities[piece.id]) {
           // piece may have been deleted in previous iterations!
@@ -229,7 +233,7 @@ export default class Board {
   }
 
   makeAsh() {
-    const { b = {} } = this.options
+    const { b = {} } = this.options.rules
     if (!b.lines || !b.algorithm) {
       return
     }
@@ -293,9 +297,12 @@ export default class Board {
     delete_ys.sort((a, b) => a - b)
     delete_ys.forEach((y) => this.removeLine(y))
     this.splitAndMerge(Math.max(...ys))
-    const collapsed_pieces = delete_ys.length && this.options.collapse && this.checkAndCollapse()
-    if (collapsed_pieces?.length > 0) {
-      this.updateBoard(collapsed_pieces)
+    const check_collapse = delete_ys.length && this.options.rules.collapse
+    if (check_collapse) {
+      const collapsed_pieces = this.checkAndCollapse()
+      if (collapsed_pieces.length > 0) {
+        this.updateBoard(collapsed_pieces)
+      }
     }
   }
 

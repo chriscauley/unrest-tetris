@@ -1,4 +1,3 @@
-
 <template>
   <div class="modal-content">
     <unrest-form :schema="schema" :state="state" @change="update" @submit="submit">
@@ -21,9 +20,10 @@ export default {
     },
     submit() {
       this.update()
-      this.state.seed = this.state.seed || new Date().valueOf() % 256
-      if (this.state.b) {
-        this.state.b.seed = this.state.b.seed || new Date().valueOf() % 256
+      const { rules } = this.state
+      rules.seed = rules.seed || new Date().valueOf() % 256
+      if (rules.b) {
+        rules.b.seed = rules.b.seed || new Date().valueOf() % 256
       }
       this.$ui.alert()
       this.$store.game.save(this.state).then((data) => {

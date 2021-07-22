@@ -147,5 +147,9 @@ export default (board) => {
       }
       return frames[current_frame]
     },
+    restart(callback) {
+      current_frame = 0
+      return this.next(callback)
+    },
   }
 }

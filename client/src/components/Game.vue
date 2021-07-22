@@ -22,6 +22,7 @@
     </svg>
     <unrest-modal v-if="paused" class="game__paused -absolute">
       <template #actions>
+        <button class="btn -secondary" @click="replay">Replay</button>
         <button class="btn -secondary" @click="clone">Clone</button>
         <button class="btn -primary" @click="resume">Resume</button>
       </template>
@@ -49,23 +50,23 @@ export default {
   data() {
     const buffer = 2
     const scale = 30
-    const game = new Game({...this.saved_game, buffer, scale })
-    game.on('save', () => this.$store.game.save(this.game.board.serialize()))
-    const mousetrap = {
-      up: () => this.input('rotate'),
-      right: () => this.input('right'),
-      left: () => this.input('left'),
-      down: () => this.input('down'),
-      space: {
-        keydown: () => this.input('drop'),
-        keyup: () => this.input('lock'),
-      },
-      z: () => this.input('swap'),
-      escape: () => this.[this.game.paused ? 'resume' : 'pause']()
-    }
-    return { game, scale, buffer, mousetrap, hash: null, paused: false, frame: null }
+    return { game: null, scale, buffer, hash: null, paused: false, frame: null }
   },
   computed: {
+    mousetrap() {
+      return {
+        up: () => this.input('rotate'),
+        right: () => this.input('right'),
+        left: () => this.input('left'),
+        down: () => this.input('down'),
+        space: {
+          keydown: () => this.input('drop'),
+          keyup: () => this.input('lock'),
+        },
+        z: () => this.input('swap'),
+        escape: () => this.[this.game.paused ? 'resume' : 'pause']()
+      }
+    },
     css() {
       const {half_opacity} = this.$store.debug.state
       return {
@@ -108,14 +109,24 @@ export default {
     },
   },
   mounted() {
-    this.render()
     makeSprites(this.scale, this.buffer)
+    this.restart()
     window.addEventListener('blur', this.pause)
   },
   unmounted() {
     window.removeEventListener('blur', this.pause)
   },
   methods: {
+    restart() {
+      const { scale, buffer } = this
+      this.game = new Game({...this.saved_game, buffer, scale })
+      this.game.on('save', () => this.$store.game.save(this.game.board.serialize()))
+      this.render()
+    },
+    replay() {
+      this.frame = this.game.board.renderer.restart(this.render)
+      this.resume()
+    },
     input(action) {
       this.game.input(action)
       this.render()

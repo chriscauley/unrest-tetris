@@ -63,7 +63,7 @@ export default {
   lock() {
     // don't "lock" if someone drops (keydown.space), then swaps, then locks (keyup.space)
     if (this._dropping) {
-      this.dropCurrent()
+      this.drop()
       this.nextTurn()
     }
     delete this._dropping

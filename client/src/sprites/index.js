@@ -4,7 +4,6 @@ export default (scale, buffer) => {
   const snap = Snap()
   const _sb = scale - buffer
 
-  let i = 0
   const makeColor = (shape) => {
     const io = [1, 0]
     io.forEach((top) =>
@@ -34,8 +33,6 @@ export default (scale, buffer) => {
             _rect('black', 0, _sb, buffer, buffer)
             _rect('black', _sb, 0, buffer, buffer)
             _rect('black', _sb, _sb, buffer, buffer)
-
-            i++
           }),
         ),
       ),
