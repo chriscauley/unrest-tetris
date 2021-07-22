@@ -1,17 +1,5 @@
 import Board from './Board'
 
-// TODO board.rotateRight and board.rotateLeft would remove the need for the array
-const actions = {
-  rotate: ['rotateCurrent', 1],
-  left: ['moveCurrentLeft'],
-  right: ['moveCurrentRight'],
-  down: ['moveCurrentDown'],
-  drop: ['dropCurrent'],
-  lock: ['lock'],
-  pause: ['pause'],
-  swap: ['swap'],
-}
-
 export default class Game {
   constructor(options = {}) {
     this.options = options
@@ -30,7 +18,7 @@ export default class Game {
   }
   input(action) {
     clearTimeout(this.timeout)
-    this.board.doAction(...actions[action])
+    this.board[action]()
   }
   on(action, f) {
     this.board.mitt.on(action, f)

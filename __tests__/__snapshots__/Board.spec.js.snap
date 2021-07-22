@@ -21,7 +21,7 @@ Object {
 }
 `;
 
-exports[`Board.dropCurrent 1`] = `
+exports[`Board.drop 1`] = `
 Object {
   "i": 5,
   "j": 7,
@@ -33,7 +33,7 @@ Object {
 }
 `;
 
-exports[`Board.rotateCurrent 1`] = `
+exports[`Board.rotate 1`] = `
 Object {
   "i": "16,17,18,19|5,17,29,41|16,17,18,19|5,17,29,41|16,17,18,19",
   "j": "6,16,17,18|5,17,29,30|16,17,18,28|4,5,17,29|6,16,17,18",

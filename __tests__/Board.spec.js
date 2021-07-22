@@ -1,24 +1,24 @@
-import Board from '../src/lib/Board'
-import Piece from '../src/lib/Piece'
+import Board from '../src/Board'
+import Piece from '../src/Piece'
 
 const print = (board) => console.log(board.geo.print(board.indexes, { empty: 'X' })) // eslint-disable-line
 const reducedIndexes = (board) =>
   Object.fromEntries(Object.entries(board.indexes).filter((e) => e[1] !== board.WALL))
 
-test('Board.rotateCurrent', () => {
+test('Board.rotate', () => {
   const results = {}
   Piece.shapes.forEach((shape) => {
     const board = new Board({ seed: shape })
     results[shape] = Object.keys(reducedIndexes(board)).join(',')
     for (let i = 0; i < 4; i++) {
-      board.rotateCurrent(1)
+      board.rotate(1)
       results[shape] += '|' + Object.keys(reducedIndexes(board)).join(',')
     }
   })
   expect(results).toMatchSnapshot()
 })
 
-test('Board.dropCurrent', () => {
+test('Board.drop', () => {
   // If you rotate and drop the piece, how many rotations does it take before game over?
   const results = {}
   Piece.all.forEach((piece) => {
@@ -26,8 +26,8 @@ test('Board.dropCurrent', () => {
     const board = new Board({ seed: piece.shape })
     while (results[piece.shape]++ < 30) {
       try {
-        board.rotateCurrent(1)
-        board.dropCurrent()
+        board.rotate(1)
+        board.drop()
         board.nextTurn()
       } catch (_e) {
         break
@@ -45,9 +45,9 @@ test('Board.options', () => {
 test('Board.clearLine', () => {
   const board = new Board({ seed: 'iiitttti' })
   const placePiece = (dindex, rotate) => {
-    rotate && board.rotateCurrent(1)
-    board.moveCurrent(dindex)
-    board.dropCurrent()
+    rotate && board.rotate(1)
+    board._moveCurrent(dindex)
+    board.drop()
     board.nextTurn()
   }
 

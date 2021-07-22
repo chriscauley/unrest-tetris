@@ -1,4 +1,4 @@
-import splitmix64 from '../src/lib/splitmix64'
+import splitmix64 from '../src/splitmix64'
 
 test('splitmix64', () => {
   const rand = splitmix64(0)

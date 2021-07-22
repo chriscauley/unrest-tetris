@@ -1,10 +1,11 @@
-import Geo, { mod } from '@unrest/geo'
+import Geo from '@unrest/geo'
 import mitt from 'mitt'
 import Hash from 'object-hash'
 
-import Piece from './Piece'
-import Btype from './Btype'
-import Renderer from './Renderer'
+import Piece from '../Piece'
+import Btype from '../Btype'
+import Renderer from '../Renderer'
+import input from './input'
 
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
 const WALL = 'W'
@@ -15,6 +16,7 @@ const alphanum = '0123456789abcdefghijklmnopqrstuvwxyz'
 export default class Board {
   constructor({ id, scale = 1, buffer = 0, ...options } = {}) {
     window.b = this
+    Object.assign(this, input)
     this.options = options
     let { W = 10, H = 20 } = options
 
@@ -60,7 +62,7 @@ export default class Board {
             this.swap()
           } else {
             this.current_piece.index = index
-            this.rotateCurrent(spin)
+            this.rotate(spin)
             this.nextTurn()
             new_hash = Hash(this.indexes)
           }
@@ -350,55 +352,10 @@ export default class Board {
     })
   }
 
-  rotateCurrent(dspin) {
-    const { shape, index, spin, id } = this.current_piece
-
-    const new_spin = mod(spin + dspin, 4)
-    const new_indexes = this._rotation_cache[shape][new_spin].map((dindex) => dindex + index)
-    const collision = new_indexes.map((i) => this.indexes[i]).find((_id) => _id && _id !== id)
-    if (collision === undefined) {
-      // all good, set piece
-      this.current_piece.spin = new_spin
-      this._placePiece(id, new_indexes)
-      this.redraw()
-    }
-  }
-
   canMoveCurrent(dindex) {
     const target_ids = this.current_piece.indexes.map((i) => this.indexes[i + dindex])
     const collision = target_ids.find((id) => id && id !== this.current_piece.id)
     return collision === undefined
-  }
-
-  moveCurrent(dindex) {
-    const piece = this.current_piece
-    const new_indexes = piece.indexes.map((i) => i + dindex)
-    this._placePiece(piece.id, new_indexes)
-    piece.index += dindex
-  }
-
-  moveCurrentDown() {
-    // down has the potential to lock and clear (next turn)
-    if (this.canMoveCurrent(this.geo.W)) {
-      this.moveCurrent(this.geo.W)
-    } else {
-      this.nextTurn()
-    }
-    this.redraw()
-  }
-
-  moveCurrentLeft() {
-    if (this.canMoveCurrent(-1)) {
-      this.moveCurrent(-1)
-      this.redraw()
-    }
-  }
-
-  moveCurrentRight() {
-    if (this.canMoveCurrent(1)) {
-      this.moveCurrent(1)
-      this.redraw()
-    }
   }
 
   redraw(delay) {
@@ -421,30 +378,6 @@ export default class Board {
     new_indexes.forEach((index) => (this.indexes[index] = piece.id))
     piece.indexes = new_indexes
     this.renderer.markStale(piece.id)
-  }
-
-  dropCurrent() {
-    this._dropping = true
-    let dy = 1
-    while (dy < this.geo.H) {
-      if (!this.canMoveCurrent(this.geo.W * dy)) {
-        break
-      }
-      dy++
-    }
-    dy--
-    this.moveCurrent(dy * this.geo.W)
-    this.redraw()
-  }
-
-  lock() {
-    // don't "lock" if someone drops (keydown.space), then swaps, then locks (keyup.space)
-    if (this._dropping) {
-      this.dropCurrent()
-      this.nextTurn()
-    }
-
-    delete this._dropping
   }
 
   removeLine(y) {
@@ -489,10 +422,6 @@ export default class Board {
         piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
       }
     })
-  }
-
-  doAction(action, ...args) {
-    this[action](...args)
   }
 
   tick() {
