@@ -54,16 +54,21 @@ export default class Board {
     this.nextTurn()
     if (actions) {
       let new_hash
-      actions.forEach(({ index, spin, swap }) => {
-        if (swap) {
-          this.swap()
-        } else {
-          this.current_piece.index = index
-          this.rotateCurrent(spin)
-          this.nextTurn()
-          new_hash = Hash(this.indexes)
-        }
-      })
+      try {
+        actions.forEach(({ index, spin, swap }) => {
+          if (swap) {
+            this.swap()
+          } else {
+            this.current_piece.index = index
+            this.rotateCurrent(spin)
+            this.nextTurn()
+            new_hash = Hash(this.indexes)
+          }
+        })
+      } catch (_e) {
+        console.error(`replay failed on step ${this.actions.length}/${actions.length}`)
+        console.error(_e)
+      }
       if (hash !== new_hash) {
         console.warn('hash mis-match')
       }
@@ -350,11 +355,19 @@ export default class Board {
 
     const new_spin = mod(spin + dspin, 4)
     const new_indexes = this._rotation_cache[shape][new_spin].map((dindex) => dindex + index)
-    this._placePiece(id, new_indexes)
+    const collision = new_indexes.map((i) => this.indexes[i]).find((_id) => _id && _id !== id)
+    if (collision === undefined) {
+      // all good, set piece
+      this.current_piece.spin = new_spin
+      this._placePiece(id, new_indexes)
+      this.redraw()
+    }
+  }
 
-    // all good, set piece
-    this.current_piece.spin = new_spin
-    this.redraw()
+  canMoveCurrent(dindex) {
+    const target_ids = this.current_piece.indexes.map((i) => this.indexes[i + dindex])
+    const collision = target_ids.find((id) => id && id !== this.current_piece.id)
+    return collision === undefined
   }
 
   moveCurrent(dindex) {
@@ -366,22 +379,26 @@ export default class Board {
 
   moveCurrentDown() {
     // down has the potential to lock and clear (next turn)
-    try {
+    if (this.canMoveCurrent(this.geo.W)) {
       this.moveCurrent(this.geo.W)
-    } catch (_e) {
+    } else {
       this.nextTurn()
     }
     this.redraw()
   }
 
   moveCurrentLeft() {
-    this.moveCurrent(-1)
-    this.redraw()
+    if (this.canMoveCurrent(-1)) {
+      this.moveCurrent(-1)
+      this.redraw()
+    }
   }
 
   moveCurrentRight() {
-    this.moveCurrent(1)
-    this.redraw()
+    if (this.canMoveCurrent(1)) {
+      this.moveCurrent(1)
+      this.redraw()
+    }
   }
 
   redraw(delay) {
@@ -398,7 +415,9 @@ export default class Board {
     }
 
     const piece = this.entities[piece_id]
-    piece.indexes.forEach((index) => delete this.indexes[index])
+    piece.indexes
+      .filter((i) => this.indexes[i] === piece_id)
+      .forEach((index) => delete this.indexes[index])
     new_indexes.forEach((index) => (this.indexes[index] = piece.id))
     piece.indexes = new_indexes
     this.renderer.markStale(piece.id)
@@ -406,13 +425,15 @@ export default class Board {
 
   dropCurrent() {
     this._dropping = true
-    for (let dy = 0; dy < this.geo.H; dy++) {
-      try {
-        this.moveCurrent(this.geo.W)
-      } catch (_e) {
-        continue
+    let dy = 1
+    while (dy < this.geo.H) {
+      if (!this.canMoveCurrent(this.geo.W * dy)) {
+        break
       }
+      dy++
     }
+    dy--
+    this.moveCurrent(dy * this.geo.W)
     this.redraw()
   }
 
@@ -471,9 +492,7 @@ export default class Board {
   }
 
   doAction(action, ...args) {
-    try {
-      this[action](...args)
-    } catch (e) {}
+    this[action](...args)
   }
 
   tick() {

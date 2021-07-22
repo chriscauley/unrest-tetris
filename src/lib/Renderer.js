@@ -143,7 +143,7 @@ export default (board) => {
     next(callback) {
       if (current_frame < frames.length - 1 && !board._paused_at) {
         current_frame++
-        setTimeout(callback, frames[current_frame]?.delay * 2)
+        setTimeout(callback, frames[current_frame]?.delay / 2)
       }
       return frames[current_frame]
     },
