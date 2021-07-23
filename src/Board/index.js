@@ -8,37 +8,39 @@ import Renderer from '../Renderer'
 import input from './input'
 
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
-const WALL = 'W'
-const ASH = 'A'
+export const WALL = 'W'
+export const ASH = 'A'
 
 const alphanum = '0123456789abcdefghijklmnopqrstuvwxyz'
+
+const getDefaultOptions = ({ rules = {}, ...options } = {}) => {
+  let { W = 10, H = 20 } = options
+
+  // expand geometry for floor and wall
+  H++
+  if (!options.wrap) {
+    W += 2
+  }
+  return { ...options, W, H, rules }
+}
 
 export default class Board {
   constructor({ id, scale = 1, buffer = 0, ...options } = {}) {
     window.b = this
     Object.assign(this, input)
-    this.options = options
-    let { W = 10, H = 20 } = options
+    this.options = getDefaultOptions(options)
 
-    // expand geometry for floor and wall
-    H++
-    if (!options.wrap) {
-      W += 2
-    }
-
-    const geo = new Geo(W, H)
+    const geo = new Geo(this.options.W, this.options.H)
     Object.assign(this, {
-      ASH,
-      WALL,
       id,
       entities: {},
       indexes: {},
       geo,
-      start_index: options.start_index || geo.xy2index([Math.floor(W / 2) - 1, 1]),
+      start_index: geo.xy2index([Math.floor(this.options.W / 2) - 1, 1]),
       _id: 1,
-      xs: range(W),
+      xs: range(this.options.W),
       actions: [],
-      generator: Piece.generator(options.rules.seed),
+      generator: Piece.generator(this.options.rules.seed),
       ghost: null,
       mitt: mitt(),
       piece_queue: [],
@@ -316,7 +318,7 @@ export default class Board {
     delete this._dropping // see note in this.lock
     this.addPiece()
     this.mitt.emit('save')
-    this.redraw(200)
+    this.redraw(100)
   }
 
   addPiece(shape) {
@@ -417,14 +419,14 @@ export default class Board {
     })
     const new_entries = Object.entries(this.indexes).map(([index, piece_id]) => {
       index = Number(index)
-      if (piece_id !== this.WALL && index < min_index) {
+      if (piece_id !== WALL && index < min_index) {
         index += W
       }
       return [index, piece_id]
     })
     this.indexes = Object.fromEntries(new_entries)
     Object.values(this.entities).forEach((piece) => {
-      if (piece.id !== this.WALL) {
+      if (piece.id !== WALL) {
         this.renderer.markStale(piece.id)
         piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
       }
