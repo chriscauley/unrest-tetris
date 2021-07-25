@@ -44,7 +44,7 @@ export default class Board {
       ghost: null,
       mitt: mitt(),
       piece_queue: [],
-      renderer: Renderer(this, render_options),
+      renderer: new Renderer(this, render_options),
     })
 
     this.cacheRotations()
