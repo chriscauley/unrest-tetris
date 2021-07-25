@@ -36,8 +36,8 @@ const getGhost = (board) => {
   return ghost
 }
 
-const renderGhost = (board) => {
-  const { scale, buffer } = board
+const renderGhost = (board, render_options) => {
+  const { scale, buffer } = render_options
   const blocks = getGhost(board).map((index) => {
     const [x, y] = board.geo.index2xy(index)
     return {
@@ -55,8 +55,8 @@ const renderGhost = (board) => {
   return { id: 'ghost', blocks }
 }
 
-const renderQueue = (board) => {
-  const { scale } = board
+const renderQueue = (board, render_options) => {
+  const { scale } = render_options
   return board.piece_queue.map((shape, iy) => ({
     id: `queue-${iy}`,
     blocks: Piece[shape].dxys.map(([x, y], i) => ({
@@ -68,9 +68,9 @@ const renderQueue = (board) => {
   }))
 }
 
-const renderStash = (board) => {
+const renderStash = (board, render_options) => {
   const shape = board.stash
-  const { scale } = board
+  const { scale } = render_options
   return Piece[shape]?.dxys.map(([x, y], i) => ({
     x: (2 + x) * scale,
     y: (2 + y) * scale,
@@ -79,7 +79,17 @@ const renderStash = (board) => {
   }))
 }
 
-export default (board) => {
+const debugLine = (board, { scale }, y, stroke) => ({
+  y,
+  stroke,
+  x: -scale,
+  width: (board.geo.W + 2) * scale,
+  height: 3,
+  fill: 'none',
+  'stroke-width': 2,
+})
+
+export default (board, render_options) => {
   let current_frame = 0
   let stale = []
   const _cache = {}
@@ -98,7 +108,11 @@ export default (board) => {
   }
 
   const draw = (delay = 0) => {
-    const { scale } = board
+    const { scale } = render_options
+    const bottom_y = Math.min(board._min_y + 17, board.geo.H)
+    const skyline_y = Math.max(0, bottom_y - 17)
+    const y_shift = 6 - skyline_y
+
     const pieces = Object.values(board.entities)
     // clear cache of stale and wet cache
     stale.forEach((id) => delete _cache[id])
@@ -125,12 +139,43 @@ export default (board) => {
     // create new frame
     const new_frame = {
       entities: pieces.map((piece) => _cache[piece.id]),
-      piece_queue: getCached('queue', () => renderQueue(board)),
-      stash: getCached('stash', () => renderStash(board)),
+      piece_queue: getCached('queue', () => renderQueue(board, render_options)),
+      stash: getCached('stash', () => renderStash(board, render_options)),
       frame_number: frames.length,
       delay: delay * 1,
-      ghost: renderGhost(board),
+      ghost: renderGhost(board, render_options),
+      y_shift,
     }
+
+    new_frame.debug = () => {
+      const debug = { texts: [], rects: [], lines: [] }
+      if (render_options.debug.annotate) {
+        debug.lines.push(debugLine(board, render_options, board._sky_line * scale, 'orange'))
+        debug.lines.push(debugLine(board, render_options, board._sealevel * scale, 'blue'))
+        Array(1 + Math.ceil(board.geo.H / 5))
+          .fill(0)
+          .forEach((_, i) => {
+            const arst = {
+              y: i * 5 * scale,
+              x: scale * 12,
+              width: scale * 2,
+            }
+            debug.rects.push({
+              height: scale,
+              fill: 'pink',
+              key: `debug-${i}`,
+              ...arst,
+            })
+            debug.texts.push({
+              ...arst,
+              text: `y=${i * 5}`,
+              y: arst.y + scale * 0.7,
+            })
+          })
+      }
+      return debug
+    }
+
     frames.push(new_frame)
   }
 

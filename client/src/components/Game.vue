@@ -1,18 +1,25 @@
 <template>
   <div :class="css.root">
-    <svg v-bind="svg" tabindex="0" v-if="frame" ref="svg">
+    <svg v-bind="svg.root" tabindex="0" v-if="frame" ref="svg">
       <rect stroke="black" stroke-width="4" :width="scale * 4" :height="scale * 4" fill="none" />
       <g transform="scale(0.75)">
         <use v-for="block in frame.stash" v-bind="block" :key="block.key" />
       </g>
-      <g :transform="`translate(${4 * scale}, ${scale})`">
+      <rect v-for="(line, i) in svg.lines" v-bind="line" :key="i" />
+      <rect v-bind="svg.sea_level" />
+      <g :transform="`translate(${4 * scale}, ${scale * frame.y_shift})`">
         <template v-for="piece in frame.entities" :key="piece.id">
           <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
         <text v-for="block in text_blocks" v-bind="block" :key="block.key">
           {{ block.text }}
         </text>
+        <rect v-for="block in frame._debug.rects" v-bind="block" :key="block.key" />
+        <text v-for="block in frame._debug.texts" v-bind="block" :key="block.key">
+          {{ block.text }}
+        </text>
         <rect v-for="block in frame.ghost.blocks" v-bind="block" :key="block.key" />
+        <rect v-for="(line, i) in frame._debug.lines" v-bind="line" :key="i" />
       </g>
       <g :transform="`translate(${(4 + game.board.geo.W) * scale}, ${scale}) scale(0.75)`">
         <template v-for="piece in frame.piece_queue" :key="piece.id">
@@ -42,6 +49,8 @@ const getBlockText = (piece, block, text) => {
   return block[text.replace('block_', '')]
 }
 
+const range = i => new Array(i).fill().map((_, i) => i)
+
 export default {
   mixins: [mousetrap.Mixin],
   props: {
@@ -55,12 +64,12 @@ export default {
   computed: {
     mousetrap() {
       return {
-        up: () => this.input('rotate'),
+        up: () => this.input('rotate') || false,
         right: () => this.input('right'),
         left: () => this.input('left'),
         down: () => this.input('down'),
         space: {
-          keydown: () => this.input('drop'),
+          keydown: () => this.input('drop') || false,
           keyup: () => this.input('lock'),
         },
         z: () => this.input('swap'),
@@ -101,10 +110,34 @@ export default {
       return blocks
     },
     svg() {
-      const { W, H } = this.game.board.geo
+      const { W } = this.game.board.geo
+      const { scale, buffer } = this
+      const width = (9 + W) * this.scale
+      const skyline = {
+        fill: 'red',
+        width: scale * (this.game.board.geo.W + 2),
+        height: buffer,
+        x: 3 * scale,
+        y: 6 * scale,
+      }
+
+      const lines = [skyline]
+      this.$store.debug.state.annotate && range(4).forEach(i =>
+        lines.push({ ...skyline, fill: 'black', y: scale * 5 * i })
+      )
+
       return {
-        width: (9 + W) * this.scale,
-        height: (2 + H) * this.scale,
+        root: {
+          width,
+          height: 27 * this.scale,
+        },
+        lines,
+        sea_level: {
+          fill: 'rgba(0,0,0,0.2)',
+          width,
+          height: scale * 10,
+          y: scale * 22,
+        }
       }
     },
   },
@@ -119,7 +152,8 @@ export default {
   methods: {
     restart() {
       const { scale, buffer } = this
-      this.game = new Game({...this.saved_game, buffer, scale })
+      const render_options = { debug: this.$store.debug.state, scale, buffer }
+      this.game = new Game({...this.saved_game, buffer, scale, render_options })
       this.game.on('save', () => this.$store.game.save(this.game.board.serialize()))
       this.render()
     },
@@ -133,6 +167,7 @@ export default {
     },
     render() {
       this.frame = this.game.board.renderer.next(this.render)
+      this.frame._debug = this.frame.debug()
     },
     pause() {
       // TODO should be this.game.paused, but for some reason the modal isn't listening to that

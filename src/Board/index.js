@@ -14,7 +14,7 @@ export const ASH = 'A'
 const alphanum = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 const getDefaultOptions = ({ rules = {}, ...options } = {}) => {
-  let { W = 10, H = 20 } = options
+  let { W = 10, H = 60 } = options
 
   // expand geometry for floor and wall
   H++
@@ -25,7 +25,7 @@ const getDefaultOptions = ({ rules = {}, ...options } = {}) => {
 }
 
 export default class Board {
-  constructor({ id, scale = 1, buffer = 0, ...options } = {}) {
+  constructor({ id, render_options = {}, ...options } = {}) {
     window.b = this
     Object.assign(this, input)
     this.options = getDefaultOptions(options)
@@ -44,9 +44,7 @@ export default class Board {
       ghost: null,
       mitt: mitt(),
       piece_queue: [],
-      renderer: Renderer(this),
-      scale,
-      buffer,
+      renderer: Renderer(this, render_options),
     })
 
     this.cacheRotations()
@@ -316,6 +314,13 @@ export default class Board {
       this.actions.push({ index, spin })
     }
     delete this._dropping // see note in this.lock
+    const ys = Object.values(this.entities)
+      .filter((p) => p.id !== WALL)
+      .map((p) => p._min_y)
+    this._min_y = Math.min(this.geo.H, ...ys)
+    this._min_y = Math.max(6, this._min_y)
+    this._sky_line = Math.min(this._min_y, this.geo.H - 17)
+    this._sealevel = this._sky_line + 16
     this.addPiece()
     this.mitt.emit('save')
     this.redraw(100)
@@ -372,21 +377,24 @@ export default class Board {
   }
 
   _placePiece(piece_id, new_indexes) {
+    const piece = this.entities[piece_id]
     const _collide_index = new_indexes.find((index) => {
       const id = this.indexes[index]
       return id && id !== piece_id
     })
     if (_collide_index !== undefined) {
+      this.print()
+      console.warn(piece, new_indexes) // eslint-disable-line
       throw 'Unable to place piece due to collision'
     }
 
-    const piece = this.entities[piece_id]
     piece.indexes
       .filter((i) => this.indexes[i] === piece_id)
       .forEach((index) => delete this.indexes[index])
     new_indexes.forEach((index) => (this.indexes[index] = piece.id))
     piece.indexes = new_indexes
     this.renderer.markStale(piece.id)
+    piece._min_y = Math.floor(Math.min(...new_indexes) / this.geo.W)
   }
 
   removeLine(y) {
@@ -429,6 +437,7 @@ export default class Board {
       if (piece.id !== WALL) {
         this.renderer.markStale(piece.id)
         piece.indexes = piece.indexes.map((i) => (i < min_index ? i + W : i))
+        piece._min_y = Math.floor(Math.min(...piece.indexes) / this.geo.W)
       }
     })
   }

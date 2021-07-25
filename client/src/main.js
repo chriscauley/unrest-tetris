@@ -11,6 +11,8 @@ import NewGameForm from '@/components/NewGameForm'
 import '@unrest/tailwind/dist.css'
 import '@/styles/base.scss'
 
+module.hot.addStatusHandler(() => window.location.reload())
+
 createApp(App)
   .use(router)
   .use(unrest.plugin)

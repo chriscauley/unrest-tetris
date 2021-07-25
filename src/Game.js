@@ -12,8 +12,8 @@ export default class Game {
     }
   }
   reset() {
-    const { rules, id, actions, hash, a, buffer, scale } = this.options
-    this.board = new Board({ rules, id, actions, hash, a, buffer, scale })
+    const { rules, id, actions, hash, a, buffer, scale, render_options } = this.options
+    this.board = new Board({ rules, id, actions, hash, a, buffer, scale, render_options })
     this.board.start()
   }
   input(action) {
