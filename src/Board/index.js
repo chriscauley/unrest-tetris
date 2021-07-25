@@ -10,6 +10,9 @@ import input from './input'
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
 export const WALL = 'W'
 export const ASH = 'A'
+const VISIBLE = 22
+const SPACE_TO_SKY = Math.ceil(VISIBLE / 4)
+const PLAYABLE_LINES = VISIBLE - SPACE_TO_SKY
 
 const alphanum = '0123456789abcdefghijklmnopqrstuvwxyz'
 
@@ -318,9 +321,9 @@ export default class Board {
       .filter((p) => p.id !== WALL)
       .map((p) => p._min_y)
     this._min_y = Math.min(this.geo.H, ...ys)
-    this._min_y = Math.max(6, this._min_y)
-    this._sky_line = Math.min(this._min_y, this.geo.H - 17)
-    this._sealevel = this._sky_line + 16
+    this._min_y = Math.max(SPACE_TO_SKY, this._min_y)
+    this._skyline = Math.min(this._min_y, this.geo.H - PLAYABLE_LINES - 1) // -1 is for floor
+    this._sealevel = this._skyline + PLAYABLE_LINES
     this.addPiece()
     this.mitt.emit('save')
     this.redraw(100)

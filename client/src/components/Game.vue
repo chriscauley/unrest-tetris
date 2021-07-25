@@ -122,7 +122,7 @@ export default {
       }
 
       const lines = [skyline]
-      this.$store.debug.state.annotate && range(4).forEach(i =>
+      this.$store.debug.state.annotate && range(5).forEach(i =>
         lines.push({ ...skyline, fill: 'black', y: scale * 5 * i })
       )
 
