@@ -147,6 +147,8 @@ export default class Renderer {
   renderGhost() {
     const { scale, buffer } = this.options
     const ghost = this.getGhost(this.board)
+    const willBeEmpty = (i) => !(this.board.indexes[i] || ghost.includes(i))
+    const wouldEliminate = (y) => undefined === this.board.geo.getRowIndexes(y).find(willBeEmpty)
     const blocks = ghost.map((index) => {
       const [x, y] = this.board.geo.index2xy(index)
       return {
@@ -157,7 +159,7 @@ export default class Renderer {
         height: scale - 2 * buffer,
         fill: 'none',
         'stroke-width': buffer,
-        stroke: 'gray',
+        stroke: wouldEliminate(y) ? 'red' : 'gray',
         'stroke-dasharray': 4,
       }
     })
