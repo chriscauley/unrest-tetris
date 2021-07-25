@@ -8,6 +8,7 @@
       <rect v-for="(line, i) in svg.lines" v-bind="line" :key="i" />
       <rect v-bind="svg.sea_level" />
       <g :transform="`translate(${4 * scale}, ${scale * frame.y_shift})`">
+        <rect fill="url(#dangerHatch)" :width="scale * game.board.geo.W" :height="scale * 3" />
         <template v-for="piece in frame.entities" :key="piece.id">
           <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
@@ -26,6 +27,10 @@
           <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
       </g>
+      <pattern id="dangerHatch" patternUnits="userSpaceOnUse" v-bind="svg.danger_pattern">
+        <rect v-bind="svg.danger_bg" />
+        <path v-bind="svg.danger_path" />
+      </pattern>
     </svg>
     <unrest-modal v-if="paused" class="game__paused -absolute">
       <template #actions>
@@ -86,7 +91,7 @@ export default {
       const blocks = []
       const { text } = this.$store.debug.state
       if (['piece_id', 'block_id', 'block_key'].includes(text)) {
-        this.frame.entities.forEach((piece) => {
+        this.frame.entities.filter(p => typeof p.id === 'number').forEach((piece) => {
           piece.blocks.forEach((block) =>
             blocks.push({
               x: block.x,
@@ -125,6 +130,7 @@ export default {
       this.$store.debug.state.annotate && range(5).forEach(i =>
         lines.push({ ...skyline, fill: 'black', y: scale * 5 * i })
       )
+      const d_scale = 6
 
       return {
         root: {
@@ -137,6 +143,14 @@ export default {
           width,
           height: scale * 10,
           y: scale * 22,
+        },
+        danger_bg: { fill: "#fbb", width: "100%", height: "100%" },
+        danger_pattern: { width: 4*d_scale, height: 4* d_scale },
+        danger_path: {
+          d: `M-1,1 l2,-2
+              M0,4 l4,-4
+              M3,5 l2,-2`.replace(/\d+/g, i => i * d_scale),
+          style: `stroke: #F00; stroke-width:${1.5 * d_scale}`, // stroke-width is a guess
         }
       }
     },
