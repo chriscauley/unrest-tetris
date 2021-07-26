@@ -20,6 +20,19 @@ store.schema = {
     },
     sticky: false,
     cascade: false,
+    nuclear: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['', 'fission', 'fusion'],
+        },
+        temperature: {
+          type: 'string',
+          enum: ['hot', 'cold'],
+        },
+      }
+    }
   },
 }
 

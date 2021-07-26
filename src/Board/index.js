@@ -306,10 +306,11 @@ export default class Board {
     const check_cascade = delete_ys.length && this.options.rules.cascade
     if (check_cascade) {
       const cascaded_pieces = this.checkAndCascade()
-      if (cascaded_pieces.length > 0) {
-        this.updateBoard(cascaded_pieces)
-      }
     }
+  }
+
+  _checkAndNuke() {
+    console.log(this._removed_piece_by_id)
   }
 
   nextTurn() {
