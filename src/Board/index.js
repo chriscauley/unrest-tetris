@@ -171,7 +171,7 @@ export default class Board {
     }
   }
 
-  checkAndCollapse() {
+  checkAndCascade() {
     this._fixed_pieces = { [WALL]: true }
     const { W, H } = this.geo
     const to_check = range(W).map((i) => i + W * (H - 1))
@@ -194,7 +194,7 @@ export default class Board {
     }
     if (_max < 1) {
       // _max is -1 if while loop overflowed
-      throw 'Unable to solve collapse'
+      throw 'Unable to solve cascade'
     }
     const loose_pieces = Object.values(this.entities).filter((p) => !this._fixed_pieces[p.id])
     loose_pieces.forEach((p) => p.indexes.forEach((i) => delete this.indexes[i]))
@@ -206,7 +206,7 @@ export default class Board {
     )
     if (loose_pieces.length) {
       this.redraw(50)
-      this.checkAndCollapse()
+      this.checkAndCascade()
     }
     return loose_pieces
   }
@@ -303,11 +303,11 @@ export default class Board {
     delete_ys.sort((a, b) => a - b)
     delete_ys.forEach((y) => this.removeLine(y))
     this.splitAndMerge(Math.max(...ys))
-    const check_collapse = delete_ys.length && this.options.rules.collapse
-    if (check_collapse) {
-      const collapsed_pieces = this.checkAndCollapse()
-      if (collapsed_pieces.length > 0) {
-        this.updateBoard(collapsed_pieces)
+    const check_cascade = delete_ys.length && this.options.rules.cascade
+    if (check_cascade) {
+      const cascaded_pieces = this.checkAndCascade()
+      if (cascaded_pieces.length > 0) {
+        this.updateBoard(cascaded_pieces)
       }
     }
   }
