@@ -287,10 +287,13 @@ export default class Board {
   updateBoard(pieces) {
     const indexes = []
     pieces.forEach((p) => p.indexes.forEach((i) => indexes.push(i)))
-    const ys = [...new Set(indexes.map(this.geo.index2xy).map((xy) => xy[1]))]
+    const ys = range(PLAYABLE_LINES)
+      .map((dy) => this._sealevel - 1 - dy)
+      .filter((y) => y >= this._min_y)
     const delete_ys = ys.filter((y) => {
-      for (let x of this.xs) {
-        if (!this.indexes[this.geo.xy2index([x, y])]) {
+      const ids = this.geo.getRowIndexes(y).map((i) => this.indexes[i])
+      for (let id of ids) {
+        if (id === undefined) {
           return false
         }
       }

@@ -79,21 +79,21 @@ export default class Renderer {
         Array(1 + Math.ceil(board.geo.H / 5))
           .fill(0)
           .forEach((_, i) => {
-            const arst = {
+            const xywk = {
+              x: scale * (this.board.geo.W - 1),
               y: i * 5 * scale,
-              x: scale * 12,
-              width: scale * 2,
+              width: scale,
+              key: `debug-${i}`,
             }
             debug.rects.push({
+              ...xywk,
               height: scale,
               fill: 'pink',
-              key: `debug-${i}`,
-              ...arst,
             })
             debug.texts.push({
-              ...arst,
-              text: `y=${i * 5}`,
-              y: arst.y + scale * 0.7,
+              ...xywk,
+              text: `y${i * 5}`,
+              y: xywk.y + scale * 0.7,
             })
           })
       }
@@ -110,7 +110,7 @@ export default class Renderer {
   next(callback) {
     if (this.current_frame < this.frames.length - 1 && !this.board._paused_at) {
       this.current_frame++
-      setTimeout(callback, this.frames[this.current_frame]?.delay / 2)
+      setTimeout(callback, this.frames[this.current_frame]?.delay * 3)
     }
     return this.frames[this.current_frame]
   }
