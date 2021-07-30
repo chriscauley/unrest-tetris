@@ -10,7 +10,8 @@ export default {
     if (collision === undefined) {
       // all good, set piece
       this.current_piece.spin = new_spin
-      this._placePiece(id, new_indexes)
+      this.current_piece.indexes = new_indexes
+      this._placePiece(this.current_piece)
       this.redraw()
     }
   },
@@ -18,7 +19,8 @@ export default {
   _moveCurrent(dindex) {
     const piece = this.current_piece
     const new_indexes = piece.indexes.map((i) => i + dindex)
-    this._placePiece(piece.id, new_indexes)
+    piece.indexes = new_indexes
+    this._placePiece(piece)
     piece.index += dindex
   },
 

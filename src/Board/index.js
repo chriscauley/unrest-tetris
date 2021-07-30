@@ -102,24 +102,18 @@ export default class Board {
 
   makeWall() {
     const { H, W } = this.geo
-    const wall = (this.entities[WALL] = {
-      shape: WALL,
-      id: WALL,
-      indexes: range(W).map((x) => x + (H - 1) * W),
-    })
+    const indexes = range(W).map((x) => x + (H - 1) * W) // floor indexes
     if (!this.options.wrap) {
       range(H - 1).map((y) => {
-        wall.indexes.push(y * W)
-        wall.indexes.push(y * W + W - 1)
+        indexes.push(y * W)
+        indexes.push(y * W + W - 1)
       })
 
-      // no longer check wall when removing a line
+      // no longer check wall xs when removing a line
       this.xs.shift()
       this.xs.pop()
     }
-
-    wall.block_ids = range(wall.indexes.length)
-    this._placePiece(WALL, wall.indexes)
+    this._newPiece({ shape: WALL, id: WALL, indexes })
   }
 
   _checkAndSplit(piece) {
@@ -138,7 +132,7 @@ export default class Board {
       const remaining = piece.indexes.filter((i) => !keep.includes(i))
       piece.block_ids = keep.map((index) => piece.block_ids[piece.indexes.indexOf(index)])
       piece.indexes = keep
-      this._placePiece(piece.id, piece.indexes)
+      this._placePiece(piece)
 
       remaining.forEach((i) => delete this.indexes[i])
       const new_piece = this._newPiece({
@@ -195,12 +189,10 @@ export default class Board {
     }
     const loose_pieces = Object.values(this.entities).filter((p) => !this._fixed_pieces[p.id])
     loose_pieces.forEach((p) => p.indexes.forEach((i) => delete this.indexes[i]))
-    loose_pieces.forEach((p) =>
-      this._placePiece(
-        p.id,
-        p.indexes.map((i) => i + W),
-      ),
-    )
+    loose_pieces.forEach((p) => {
+      p.indexes = p.indexes.map((i) => i + W)
+      this._placePiece(p)
+    })
     if (loose_pieces.length) {
       this.redraw(50)
       this.checkAndCascade()
@@ -228,7 +220,7 @@ export default class Board {
       delete this.entities[target_piece.id]
     })
     if (Object.keys(merge).length > 0) {
-      this._placePiece(piece.id, piece.indexes)
+      this._placePiece(piece)
     }
   }
 
@@ -237,25 +229,20 @@ export default class Board {
     if (!b.lines || !b.algorithm) {
       return
     }
-    const ash = (this.entities[ASH] = {
-      shape: ASH,
-      id: ASH,
-      indexes: [],
-    })
+    let indexes = []
     range(b.lines).forEach((dy) => {
       const y = this.geo.H - dy - 2
-      this.xs.forEach((x) => ash.indexes.push(this.geo.xy2index([x, y])))
+      this.xs.forEach((x) => indexes.push(this.geo.xy2index([x, y])))
     })
     let i = 0
     const removes = {}
     const f = Btype[b.algorithm](b.seed)
-    while (i < ash.indexes.length) {
+    while (i < indexes.length) {
       i += f()
       removes[i] = true
     }
-    ash.indexes = ash.indexes.filter((_, i) => !removes[i])
-    ash.block_ids = range(ash.indexes.length)
-    this._placePiece(ASH, ash.indexes)
+    indexes = indexes.filter((_, i) => !removes[i])
+    this._newPiece({ shape: ASH, id: ASH, indexes })
   }
 
   start() {
@@ -351,8 +338,9 @@ export default class Board {
       index += this.geo.W
     }
     this._validateIndex(index)
-    this.entities[piece.id] = piece // was removed when line was cleared
-    this._placePiece(piece.id, [index])
+    piece.index = index
+    piece.indexes = [index]
+    this._placePiece(piece)
   }
 
   _placeColdPiece(piece, index) {
@@ -482,7 +470,7 @@ export default class Board {
     }
     piece.block_ids = piece.indexes.map((i) => `${piece.id}-${i}`)
     this.entities[piece.id] = piece
-    this._placePiece(piece.id, piece.indexes)
+    this._placePiece(piece)
     return piece
   }
 
@@ -517,26 +505,29 @@ export default class Board {
     this.renderer.draw(delay)
   }
 
-  _placePiece(piece_id, new_indexes) {
-    const piece = this.entities[piece_id]
-    const _collide_index = new_indexes.find((index) => {
+  _placePiece(piece) {
+    const _collide_index = piece.indexes.find((index) => {
       const id = this.indexes[index]
-      return id && id !== piece_id
+      return id && id !== piece.id
     })
     if (_collide_index !== undefined) {
       this.print()
-      console.warn(piece, new_indexes) // eslint-disable-line
-      console.warn(new_indexes.map((i) => this.indexes[i]))
+      console.warn(piece) // eslint-disable-line
+      console.warn(
+        'targets',
+        piece.indexes.map((i) => [i, this.indexes[i]]),
+      )
       throw 'Unable to place piece due to collision'
     }
 
-    piece.indexes
-      .filter((i) => this.indexes[i] === piece_id)
+    piece._old_indexes
+      ?.filter((i) => this.indexes[i] === piece.id)
       .forEach((index) => delete this.indexes[index])
-    new_indexes.forEach((index) => (this.indexes[index] = piece.id))
-    piece.indexes = new_indexes
+    piece.indexes.forEach((index) => (this.indexes[index] = piece.id))
     this.renderer.markStale(piece.id)
-    piece._min_y = Math.floor(Math.min(...new_indexes) / this.geo.W)
+    piece._min_y = Math.floor(Math.min(...piece.indexes) / this.geo.W)
+    this.entities[piece.id] = piece // can be removed by removeBlock
+    piece._old_indexes = piece.indexes.slice()
   }
 
   _removeBlock(index) {
