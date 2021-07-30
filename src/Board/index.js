@@ -141,15 +141,11 @@ export default class Board {
       this._placePiece(piece.id, piece.indexes)
 
       remaining.forEach((i) => delete this.indexes[i])
-      const new_piece = {
-        id: this._id++,
+      const new_piece = this._newPiece({
         shape: piece.shape,
         index: remaining[0],
         indexes: remaining,
-        block_ids: range(remaining.length),
-      }
-      this.entities[new_piece.id] = new_piece
-      this._placePiece(new_piece.id, remaining)
+      })
       this._checkAndSplit(new_piece)
     }
   }
@@ -442,11 +438,7 @@ export default class Board {
     }
     target_indexes.forEach((target_index) => {
       this._removeBlock(target_index)
-      const id = this._id++
-      this.indexes[target_index] = id
-      const indexes = [target_index]
-      this.entities[id] = { id, shape, indexes, block_ids: [0], charges }
-      this._placePiece(id, indexes)
+      this._newPiece({ shape, indexes: [target_index], charges })
     })
   }
 
@@ -481,12 +473,17 @@ export default class Board {
     const { dxys } = Piece[shape]
     const dindexes = dxys.map(this.geo.dxy2dindex)
     const indexes = dindexes.map((dindex) => dindex + this.start_index)
-    const id = this._id++
-    const block_ids = range(indexes.length).map((i) => i + 4 * id)
-    const piece = { id, shape, spin: 0, index: this.start_index, indexes: [], block_ids }
-    this.current_piece = this.entities[id] = piece
+    this.current_piece = this._newPiece({ shape, spin: 0, index: this.start_index, indexes })
+  }
 
-    this._placePiece(piece.id, indexes)
+  _newPiece({ ...piece }) {
+    if (!piece.id) {
+      piece.id = this._id++
+    }
+    piece.block_ids = piece.indexes.map((i) => `${piece.id}-${i}`)
+    this.entities[piece.id] = piece
+    this._placePiece(piece.id, piece.indexes)
+    return piece
   }
 
   cacheRotations() {
