@@ -7,9 +7,10 @@ import Btype from '../Btype'
 import Renderer from '../Renderer'
 import input from './input'
 
+const { WALL, ASH, HOT, COLD } = Piece
+
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
-export const WALL = 'W'
-export const ASH = 'A'
+
 const VISIBLE = 22
 const SPACE_TO_SKY = Math.ceil(VISIBLE / 4)
 const PLAYABLE_LINES = VISIBLE - SPACE_TO_SKY
@@ -284,33 +285,169 @@ export default class Board {
     this.redraw()
   }
 
+  _lineWillClear(y) {
+    const ids = this.geo.getRowIndexes(y).map((i) => this.indexes[i])
+    for (let id of ids) {
+      if (id === undefined) {
+        return false
+      }
+    }
+    return true
+  }
+
   updateBoard(pieces) {
     const indexes = []
     pieces.forEach((p) => p.indexes.forEach((i) => indexes.push(i)))
     const ys = range(PLAYABLE_LINES)
       .map((dy) => this._sealevel - 1 - dy)
       .filter((y) => y >= this._min_y)
-    const delete_ys = ys.filter((y) => {
-      const ids = this.geo.getRowIndexes(y).map((i) => this.indexes[i])
-      for (let id of ids) {
-        if (id === undefined) {
-          return false
-        }
-      }
-      return true
-    })
+    const delete_ys = ys.filter((y) => this._lineWillClear(y))
     this._removed_pieces_by_id = {}
+    this._checkAndNuke(delete_ys)
+    this._cleared_current = []
+    this._cleared_hot_cold = {}
     delete_ys.sort((a, b) => a - b)
     delete_ys.forEach((y) => this.removeLine(y))
     this.splitAndMerge(Math.max(...ys))
-    const check_cascade = delete_ys.length && this.options.rules.cascade
+
+    Object.entries(this._cleared_hot_cold).forEach(([index, piece]) => {
+      index = Number(index)
+      piece.charges--
+      if (piece.charges < 1) {
+        // TODO fusion pieces might be able to explode (depth charges, shattering sticky pieces)
+        // TODO animate
+        return
+      }
+
+      // shift index down one row for every row under it removed
+      const index_y = this.geo.index2xy(index)[1]
+      index += delete_ys.filter((y) => index_y < y).length * this.geo.W
+
+      if (piece.shape === HOT) {
+        this._placeHotPiece(piece, Number(index))
+      } else {
+        // piece.shape === COLD
+        this._placeColdPiece(piece, Number(index))
+      }
+    })
+
+    const check_cascade =
+      (delete_ys.length && this.options.rules.cascade) ||
+      Object.keys(this._cleared_hot_cold).length > 0
     if (check_cascade) {
-      const cascaded_pieces = this.checkAndCascade()
+      this.checkAndCascade()
     }
   }
 
+  _validateIndex(index) {
+    if (index >= this.geo.AREA) {
+      throw 'Cascade of hot/cold piece failed'
+    }
+  }
+
+  _cascadeHotCold(piece, index) {
+    this._validateIndex(index)
+    while (index < this.geo.AREA) {
+      // This loop basically just "cascades" until it hits a piece
+      if (this.indexes[index + this.geo.W]) {
+        break
+      }
+      index += this.geo.W
+    }
+    this._validateIndex(index)
+    this.entities[piece.id] = piece // was removed when line was cleared
+    this._placePiece(piece.id, [index])
+  }
+
+  _placeColdPiece(piece, index) {
+    while (index < this.geo.AREA) {
+      index += this.geo.W
+      // phase through pieces until there's an empty spot
+      if (this.indexes[index] === WALL) {
+        // TODO score remaining charges
+        // TODO animate
+        return
+      }
+      const target_piece = this.entities[this.indexes[index]]
+      if (!target_piece) {
+        break
+      }
+      if (target_piece.shape === HOT) {
+        // TODO right now hot/cold phase through each other. Maybe detonate?
+        continue
+      }
+    }
+    this._cascadeHotCold(piece, index)
+  }
+
+  _placeHotPiece(piece, index) {
+    while (index < this.geo.AREA) {
+      index += this.geo.W
+      const target_piece = this.entities[this.indexes[index]]
+      if (!target_piece) {
+        // empty space, time to cascade
+        break
+      }
+      if (target_piece.shape === COLD) {
+        // TODO right now hot/cold phase through each other. Maybe detonate?
+        continue
+      }
+      if (target_piece.shape === HOT) {
+        // when hot collides with hot, move lower hot down one
+        // net result is a column of HOT all go down one row
+        this._removeBlock(index)
+        this._placeHotPiece(target_piece, index)
+        break
+      }
+      if (target_piece.shape === WALL) {
+        // TODO score remaining charges
+        // TODO animate
+        return
+      }
+      // melt whatever piece was there
+      // TODO animate
+      this._removeBlock(index)
+      break
+    }
+    this._cascadeHotCold(piece, index)
+  }
+
+  _isNuclear(type, indexes) {
+    const { index2xy } = this.geo
+    const funcs = {
+      fusion: (i) => this._lineWillClear(index2xy(i)[1]),
+      fission: (i) => !this._lineWillClear(index2xy(i)[1]),
+    }
+    const nuke_indexes = indexes.filter(funcs[type])
+    if (nuke_indexes.length === indexes.length && type === 'fission') {
+      // fusion needs to remove at least one line to count
+      return []
+    }
+    return nuke_indexes
+  }
+
   _checkAndNuke() {
-    console.log(this._removed_piece_by_id)
+    // convert current to hot/cold when fission/fusion is triggered
+    const { type, temperature } = this.options.rules?.nuclear || {}
+    if (!type) {
+      return
+    }
+    const target_indexes = this._isNuclear(type, this.current_piece.indexes)
+    const shape = temperature === 'hot' ? HOT : COLD
+    // 1, 2, 3, 4 blocks yields 6, 3, 2, 1 charges per block respectively
+    let charges = Math.floor(6 / target_indexes.length)
+    if (type === 'fusion') {
+      // Since fusion get triggered right after being generated they get an extra charge
+      charges++
+    }
+    target_indexes.forEach((target_index) => {
+      this._removeBlock(target_index)
+      const id = this._id++
+      this.indexes[target_index] = id
+      const indexes = [target_index]
+      this.entities[id] = { id, shape, indexes, block_ids: [0], charges }
+      this._placePiece(id, indexes)
+    })
   }
 
   nextTurn() {
@@ -392,6 +529,7 @@ export default class Board {
     if (_collide_index !== undefined) {
       this.print()
       console.warn(piece, new_indexes) // eslint-disable-line
+      console.warn(new_indexes.map((i) => this.indexes[i]))
       throw 'Unable to place piece due to collision'
     }
 
@@ -404,33 +542,34 @@ export default class Board {
     piece._min_y = Math.floor(Math.min(...new_indexes) / this.geo.W)
   }
 
+  _removeBlock(index) {
+    const piece = this.entities[this.indexes[index]]
+    const block_index = piece.indexes.indexOf(index)
+    piece.indexes.splice(block_index, 1)
+    piece.block_ids.splice(block_index, 1)
+    delete this.indexes[index]
+    if (!piece.indexes.length) {
+      delete this.entities[piece.id]
+    } else {
+      this._removed_pieces_by_id[piece.id] = piece
+    }
+  }
+
   removeLine(y) {
-    const moved = {}
     const { W, xy2index } = this.geo
     const min_index = xy2index([0, y])
     this.xs.forEach((x) => {
       const index = xy2index([x, y])
       const piece_id = this.indexes[index]
-      delete this.indexes[index]
-      if (!moved[piece_id]) {
-        this.renderer.markStale(piece_id)
-        const piece = this.entities[piece_id]
-        const delete_blocks = []
-        piece.indexes.forEach((i, block_index) => {
-          if (this.geo.index2xy(i)[1] === y) {
-            delete_blocks.push(block_index)
-          }
-        })
-        piece.indexes = piece.indexes.filter((_, _index) => !delete_blocks.includes(_index))
-        piece.block_ids = piece.block_ids.filter((_, _index) => !delete_blocks.includes(_index))
-        moved[piece_id] = true
-        // piece.indexes = piece.indexes.filter((i) => i !== index)
-        if (!piece.indexes.length) {
-          delete this.entities[piece_id]
-        } else {
-          this._removed_pieces_by_id[piece_id] = piece
-        }
+      if (piece_id === this.current_piece.id) {
+        this._cleared_current.push(index)
       }
+      const piece = this.entities[piece_id]
+      if ([HOT, COLD].includes(piece?.shape)) {
+        this._cleared_hot_cold[index] = piece
+      }
+      this._removeBlock(index)
+      this.renderer.markStale(piece_id)
     })
     const new_entries = Object.entries(this.indexes).map(([index, piece_id]) => {
       index = Number(index)

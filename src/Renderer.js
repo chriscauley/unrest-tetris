@@ -55,6 +55,13 @@ export default class Renderer {
             }
           }),
         }
+        if (piece.charges) {
+          const block = this._cache[piece.id].blocks[0]
+          this._cache[piece.id].charges = {
+            text: piece.charges,
+            transform: `translate(${block.x}, ${block.y})`,
+          }
+        }
       }
     })
 

@@ -50,6 +50,10 @@ export default {
   all,
   shapes,
   ...Piece,
+  WALL: 'W',
+  ASH: 'A',
+  COLD: 'C',
+  HOT: 'H',
   generator: (s) => {
     s = s || new Date().valueOf() % 256
     if (s.match?.(/^\d+$/)) {

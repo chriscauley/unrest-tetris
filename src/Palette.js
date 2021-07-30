@@ -9,6 +9,8 @@ const _default = {
   outline: 'rgba(0,0,0,0.25)',
   W: '#000',
   A: '#888',
+  C: 'blue',
+  H: 'red',
 }
 
 export default { default: _default }
