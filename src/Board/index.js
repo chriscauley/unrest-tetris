@@ -5,7 +5,7 @@ import Hash from 'object-hash'
 import Piece from '../Piece'
 import Btype from '../Btype'
 import Renderer from '../Renderer'
-import input from './input'
+import _actions from './_actions'
 
 const { WALL, ASH, HOT, COLD } = Piece
 
@@ -31,7 +31,7 @@ const getDefaultOptions = ({ rules = {}, ...options } = {}) => {
 export default class Board {
   constructor({ id, render_options = {}, ...options } = {}) {
     window.b = this
-    Object.assign(this, input)
+    Object.assign(this, _actions)
     this.options = getDefaultOptions(options)
 
     const geo = new Geo(this.options.W, this.options.H)

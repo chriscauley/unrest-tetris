@@ -12,7 +12,7 @@ export default {
       this.current_piece.spin = new_spin
       this.current_piece.indexes = new_indexes
       this._placePiece(this.current_piece)
-      this.redraw()
+      // this.redraw()
     }
   },
 
@@ -31,20 +31,20 @@ export default {
     } else {
       this.nextTurn()
     }
-    this.redraw()
+    // this.redraw()
   },
 
   left() {
     if (this.canMoveCurrent(-1)) {
       this._moveCurrent(-1)
-      this.redraw()
+      // this.redraw()
     }
   },
 
   right() {
     if (this.canMoveCurrent(1)) {
       this._moveCurrent(1)
-      this.redraw()
+      // this.redraw()
     }
   },
 
@@ -59,7 +59,7 @@ export default {
     }
     dy--
     this._moveCurrent(dy * this.geo.W)
-    this.redraw()
+    // this.redraw()
   },
 
   lock() {
