@@ -1,9 +1,9 @@
-import Board, { WALL } from '../src/Board'
+import Board from '../src/Board'
 import Piece from '../src/Piece'
 
 const print = (board) => console.log(board.geo.print(board.indexes, { empty: 'X' })) // eslint-disable-line
 const reducedIndexes = (board) =>
-  Object.fromEntries(Object.entries(board.indexes).filter((e) => e[1] !== WALL))
+  Object.fromEntries(Object.entries(board.indexes).filter((e) => e[1] !== Piece.WALL))
 
 test('Board.rotate', () => {
   const results = {}

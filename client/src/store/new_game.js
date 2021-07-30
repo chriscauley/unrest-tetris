@@ -31,8 +31,8 @@ store.schema = {
           type: 'string',
           enum: ['hot', 'cold'],
         },
-      }
-    }
+      },
+    },
   },
 }
 

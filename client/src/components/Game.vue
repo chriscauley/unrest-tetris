@@ -11,6 +11,10 @@
         <rect fill="url(#dangerHatch)" :width="scale * game.board.geo.W" :height="scale * 3" />
         <template v-for="piece in frame.entities" :key="piece.id">
           <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
+          <g v-if="piece.charges" :transform="piece.charges.transform">
+            <ellipse v-bind="svg.charge_ellipse" />
+            <text :x="scale / 3" :y="(scale * 2) / 3">{{ piece.charges.text }}</text>
+          </g>
         </template>
         <text v-for="block in text_blocks" v-bind="block" :key="block.key">
           {{ block.text }}
@@ -151,6 +155,13 @@ export default {
               M0,4 l4,-4
               M3,5 l2,-2`.replace(/\d+/g, i => i * d_scale),
           style: `stroke: #F00; stroke-width:${1.5 * d_scale}`, // stroke-width is a guess
+        },
+        charge_ellipse: {
+          cx: scale / 2,
+          cy: scale / 2,
+          rx: scale / 3,
+          ry: scale / 3,
+          fill: 'white',
         }
       }
     },
