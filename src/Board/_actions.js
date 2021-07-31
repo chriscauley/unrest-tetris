@@ -12,7 +12,7 @@ export default {
       this.current_piece.spin = new_spin
       this.current_piece.indexes = new_indexes
       this._placePiece(this.current_piece)
-      // this.redraw()
+      this.renderer.moveCurrent()
     }
   },
 
@@ -28,23 +28,23 @@ export default {
     // down has the potential to lock and clear (next turn)
     if (this.canMoveCurrent(this.geo.W)) {
       this._moveCurrent(this.geo.W)
+      this.renderer.moveCurrent()
     } else {
       this.nextTurn()
     }
-    // this.redraw()
   },
 
   left() {
     if (this.canMoveCurrent(-1)) {
       this._moveCurrent(-1)
-      // this.redraw()
+      this.renderer.moveCurrent()
     }
   },
 
   right() {
     if (this.canMoveCurrent(1)) {
       this._moveCurrent(1)
-      // this.redraw()
+      this.renderer.moveCurrent()
     }
   },
 
@@ -59,7 +59,7 @@ export default {
     }
     dy--
     this._moveCurrent(dy * this.geo.W)
-    // this.redraw()
+    this.renderer.moveCurrent()
   },
 
   lock() {

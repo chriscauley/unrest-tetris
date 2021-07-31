@@ -12,18 +12,21 @@ Piece.all.forEach((piece) => {
   )
 })
 
+// TODO lodash.cloneDeep?
+const cloneDeep = (o) => JSON.parse(JSON.stringify(o))
+
 export default class Renderer {
   constructor(board, options) {
     Object.assign(this, { board, options })
-    this.current_frame = 0
+    this.current = {
+      frame: 0,
+      subframe: 0,
+    }
     this._cache = {}
     this.frames = []
   }
-  _getCached(key, f) {
-    if (!this._cache[key]) {
-      this._cache[key] = f()
-    }
-    return this._cache[key]
+  get last_frame() {
+    return this.frames[this.frames.length - 1]
   }
   _trlb(block_index, piece_id) {
     const { geo, indexes } = this.board
@@ -31,7 +34,34 @@ export default class Renderer {
       .map((dindex) => (indexes[dindex + block_index] === piece_id ? 0 : 1))
       .join('')
   }
-  draw(delay = 0) {
+
+  _newPiece(piece) {
+    const { board } = this
+    const { scale } = this.options
+    // TODO first attempt at caching wasn't great and performance isn't limited yet
+    const new_piece = {
+      id: piece.id,
+      blocks: piece.indexes.map((index, i) => {
+        const [x, y] = board.geo.index2xy(index)
+        return {
+          x: x * scale,
+          y: y * scale,
+          key: piece.block_ids[i],
+          href: `#${piece.shape}-${this._trlb(index, piece.id)}`,
+        }
+      }),
+    }
+    const block = new_piece.blocks[0]
+    if (piece.charges !== undefined && block) {
+      new_piece.charges = {
+        text: piece.charges,
+        transform: `translate(${block.x}, ${block.y})`,
+      }
+    }
+    return new_piece
+  }
+
+  draw() {
     const { board } = this
     const { scale } = this.options
     const bottom_y = Math.min(board._min_y + 17, board.geo.H)
@@ -40,40 +70,24 @@ export default class Renderer {
 
     const pieces = Object.values(board.entities)
     pieces.forEach((piece) => {
-      // TODO first attempt at caching wasn't great and performance isn't limited yet
       if (true || !this._cache[piece.id]) {
-        const piece_key = piece.id === board.current_piece.id ? Math.random() : piece.id
-        this._cache[piece.id] = {
-          id: piece.id,
-          blocks: piece.indexes.map((index, i) => {
-            const [x, y] = board.geo.index2xy(index)
-            return {
-              x: x * scale,
-              y: y * scale,
-              key: `${piece_key}-${piece.block_ids[i]}`,
-              href: `#${piece.shape}-${this._trlb(index, piece.id)}`,
-            }
-          }),
-        }
-        if (piece.charges) {
-          const block = this._cache[piece.id].blocks[0]
-          this._cache[piece.id].charges = {
-            text: piece.charges,
-            transform: `translate(${block.x}, ${block.y})`,
-          }
-        }
+        this._cache[piece.id] = this._newPiece(piece)
       }
     })
+    pieces.reverse()
 
     // create new frame
     const new_frame = {
-      entities: pieces.map((piece) => this._cache[piece.id]),
-      piece_queue: this._getCached('queue', () => this.renderQueue()),
-      stash: this._getCached('stash', () => this.renderStash()),
-      frame_number: this.frames.length,
-      delay: delay * 1,
-      ghost: this.renderGhost(),
-      y_shift,
+      initial_state: {
+        entities: pieces.map((piece) => this._cache[piece.id]),
+        piece_queue: this.renderQueue(),
+        stash: this.renderStash(),
+        frame_number: this.frames.length,
+        ghost: this.renderGhost(board.current_piece?.indexes),
+        y_shift,
+        animations: [],
+      },
+      actions: [],
     }
 
     const { _skyline, _sealevel } = board
@@ -110,28 +124,54 @@ export default class Renderer {
     this.frames.push(new_frame)
   }
 
+  debug() {
+    const frame = this.frames[this.current.frame]
+    return frame?.debug()
+  }
+
   markStale(id) {
     delete this._cache[id]
   }
 
+  setTimeout(f, delay) {
+    clearTimeout(this._timeout)
+    this._timeout = setTimeout(f, delay)
+  }
+
   next(callback) {
-    if (this.current_frame < this.frames.length - 1 && !this.board._paused_at) {
-      this.current_frame++
-      setTimeout(callback, this.frames[this.current_frame]?.delay * 3)
+    const frame = this.frames[this.current.frame]
+    const more_actions = this.current.subframe < frame.actions.length
+    const at_end = this.current.frame === this.frames.length - 1 && !more_actions
+    if (at_end || this.board._paused_at) {
+      return
     }
-    return this.frames[this.current_frame]
+    if (this.current.subframe < frame.actions.length) {
+      frame.actions[this.current.subframe]()
+      this.current.subframe++
+    } else {
+      this.current.frame++
+      this.goToFrame(this.current.frame)
+    }
+    const { delay = 200 } = this
+    delete this.delay
+    this.setTimeout(callback, delay)
   }
 
   restart(callback) {
-    this.current_frame = 0
-    return this.next(callback)
+    this.goToFrame(0)
+    this.setTimeout(callback, 50)
   }
 
-  getGhost() {
+  goToFrame(number) {
+    this.current.frame = number
+    this.current.subframe = 0
+    this.state = cloneDeep(this.frames[number].initial_state)
+  }
+
+  getGhost(ghost = []) {
     const { W, H } = this.board.geo
     const max_index = W * H - 1
     let _h = H
-    let ghost = this.board.current_piece?.indexes || []
     while (_h--) {
       const new_ghost = ghost.map((i) => i + W)
       const collides = new_ghost.find((index) => {
@@ -151,9 +191,9 @@ export default class Renderer {
     return ghost
   }
 
-  renderGhost() {
+  renderGhost(indexes) {
     const { scale, buffer } = this.options
-    const ghost = this.getGhost(this.board)
+    const ghost = this.getGhost(indexes)
     const willBeEmpty = (i) => !(this.board.indexes[i] || ghost.includes(i))
     const wouldEliminate = (y) => undefined === this.board.geo.getRowIndexes(y).find(willBeEmpty)
     const blocks = ghost.map((index) => {
@@ -209,5 +249,95 @@ export default class Renderer {
       fill: 'none',
       'stroke-width': 2,
     }
+  }
+
+  removeBlocks(piece) {
+    const { block_ids } = piece
+    const frame = this.last_frame
+    frame.actions.push(() => {
+      const entity = this.state.entities.find((e) => e.id === piece.id)
+      entity.blocks = entity.blocks.filter((b) => block_ids.includes(b.id))
+      // TODO animate removal
+    })
+  }
+
+  moveBlocks(piece) {
+    const frame = this.last_frame
+    const new_piece = this._newPiece(piece)
+    const new_ghost = this.renderGhost(this.board.current_piece.indexes)
+    frame.actions.push(() => {
+      const entity = this.state.entities.find((e) => e.id === piece.id)
+      Object.assign(entity, new_piece)
+      this.state.ghost = new_ghost
+    })
+  }
+
+  moveCurrent() {
+    this.moveBlocks(this.board.current_piece)
+  }
+
+  stash(new_piece, old_id) {
+    new_piece = cloneDeep(new_piece)
+    const frame = this.last_frame
+    frame.actions.push(() => {
+      this.state.entities = this.state.entities.filter((e) => e.id !== old_id)
+      this.state.entities.push(this._newPiece(new_piece))
+      this.state.ghost = this.renderGhost(new_piece.indexes)
+    })
+  }
+
+  flashLines(ys) {
+    if (!ys.length) {
+      return
+    }
+    const frame = this.last_frame
+    const { scale } = this.options
+    frame.actions.push(() => {
+      this.delay = 200
+      ys.forEach((y) => {
+        this.state.animations.unshift({
+          key: Math.random(),
+          transform: `translate(0, ${y * scale})`,
+          rect: {
+            height: scale,
+            width: scale * this.board.geo.W,
+            fill: 'pink',
+          },
+        })
+      })
+    })
+  }
+
+  addNukes(replacements) {
+    replacements = cloneDeep(replacements)
+    const frame = this.last_frame
+    const { scale } = this.options
+    frame.actions.push(() => {
+      replacements.forEach((new_piece) => {
+        const entity = this._newPiece(new_piece)
+        this.state.entities.push(entity)
+        this.state.animations.push({
+          key: Math.random(),
+          transform: `translate(${entity.blocks[0].x}, ${entity.blocks[0].y})`,
+          class: 'animation -nuke',
+          rect: {
+            width: scale,
+            height: scale,
+            fill: `url(#${new_piece.shape}Hatch)`,
+          },
+        })
+      })
+    })
+  }
+
+  moveNukes(pieces) {
+    const frame = this.last_frame
+    const new_pieces = pieces.map((p) => this._newPiece(p))
+    frame.actions.push(() => {
+      new_pieces.forEach((piece) => {
+        const entity = this.state.entities.find((e) => e.id === piece.id)
+        Object.assign(entity, piece)
+      })
+    })
   }
 }

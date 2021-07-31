@@ -58,15 +58,32 @@ export default class Board {
 
     const { actions, hash } = this.options
     this.nextTurn()
+
     if (actions) {
+      // replay previous game
       let new_hash
       try {
         actions.forEach(({ index, spin, swap }) => {
           if (swap) {
             this.swap()
           } else {
-            this.current_piece.index = index
-            this.rotate(spin)
+            if (spin) {
+              this.rotate(spin) // does renderer.moveCurrent
+            }
+            if (index - this.current_piece.index) {
+              const [x, y] = this.geo.index2xy(index)
+              const [old_x, old_y] = this.geo.index2xy(this.current_piece.index)
+              const dy = y - old_y
+              const dx = x - old_x
+              if (dx) {
+                this._moveCurrent(dx)
+                this.renderer.moveCurrent()
+              }
+              if (dy) {
+                this._moveCurrent(dy * this.geo.W)
+                this.renderer.moveCurrent()
+              }
+            }
             this.nextTurn()
             new_hash = Hash(this.indexes)
           }
@@ -194,7 +211,6 @@ export default class Board {
       this._placePiece(p)
     })
     if (loose_pieces.length) {
-      this.redraw(50)
       this.checkAndCascade()
     }
     return loose_pieces
@@ -264,8 +280,7 @@ export default class Board {
     this.addPiece(this.stash)
     this.stash = shape
     this.actions.push({ swap: true })
-    this.renderer.markStale('stash')
-    this.redraw()
+    this.renderer.stash(this.current_piece, id)
   }
 
   _lineWillClear(y) {
@@ -291,8 +306,10 @@ export default class Board {
     this._cleared_hot_cold = {}
     delete_ys.sort((a, b) => a - b)
     delete_ys.forEach((y) => this.removeLine(y))
+    this.renderer.flashLines(delete_ys)
     this.splitAndMerge(Math.max(...ys))
 
+    const moved_nukes = []
     Object.entries(this._cleared_hot_cold).forEach(([index, piece]) => {
       index = Number(index)
       piece.charges--
@@ -312,7 +329,9 @@ export default class Board {
         // piece.shape === COLD
         this._placeColdPiece(piece, Number(index))
       }
+      moved_nukes.push(piece)
     })
+    moved_nukes.length && this.renderer.moveNukes(moved_nukes)
 
     const check_cascade =
       (delete_ys.length && this.options.rules.cascade) ||
@@ -410,7 +429,7 @@ export default class Board {
     return nuke_indexes
   }
 
-  _checkAndNuke() {
+  _checkAndNuke(delete_ys) {
     // convert current to hot/cold when fission/fusion is triggered
     const { type, temperature } = this.options.rules?.nuclear || {}
     if (!type) {
@@ -424,10 +443,20 @@ export default class Board {
       // Since fusion get triggered right after being generated they get an extra charge
       charges++
     }
-    target_indexes.forEach((target_index) => {
+    const nukes = target_indexes.map((target_index) => {
       this._removeBlock(target_index)
-      this._newPiece({ shape, indexes: [target_index], charges })
+      return this._newPiece({ shape, indexes: [target_index], charges })
     })
+    delete_ys.forEach((y) =>
+      this.geo.getRowIndexes(y).forEach((index) => {
+        // TODO seperate animation for creating nuke vs activating nuke
+        const piece = this.entities[this.indexes[index]]
+        if ([HOT, COLD].includes(piece.shape) && piece.charges) {
+          nukes.push(piece)
+        }
+      }),
+    )
+    nukes.length && this.renderer.addNukes(nukes)
   }
 
   nextTurn() {
@@ -447,7 +476,7 @@ export default class Board {
     this._sealevel = this._skyline + PLAYABLE_LINES
     this.addPiece()
     this.mitt.emit('save')
-    this.redraw(100)
+    this.renderer.draw()
   }
 
   addPiece(shape) {
@@ -501,22 +530,16 @@ export default class Board {
     return collision === undefined
   }
 
-  redraw(delay) {
-    this.renderer.draw(delay)
-  }
-
   _placePiece(piece) {
     const _collide_index = piece.indexes.find((index) => {
       const id = this.indexes[index]
       return id && id !== piece.id
     })
     if (_collide_index !== undefined) {
+      const targets = piece.indexes.map((i) => [i, this.indexes[i]])
       this.print()
       console.warn(piece) // eslint-disable-line
-      console.warn(
-        'targets',
-        piece.indexes.map((i) => [i, this.indexes[i]]),
-      )
+      console.warn('targets', targets)
       throw 'Unable to place piece due to collision'
     }
 
