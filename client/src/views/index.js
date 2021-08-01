@@ -1,3 +1,4 @@
 import Game from './Game'
+import Home from './Home'
 
-export default { Game }
+export default { Game, Home }
