@@ -54,7 +54,7 @@ export default {
       const { name, slug } = preset
       const options = Mode.b0.getOptions(
         {
-          mode: { name, slug },
+          mode: { name, slug, goal: 'b0' },
           rules: {
             ...preset.rules,
             b: { algorithm: 'mod8' },

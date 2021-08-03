@@ -1,5 +1,8 @@
 <template>
   <div :class="css.root">
+    <div class="game__scores">
+      <div v-for="text in frame.scores">{{ text }}</div>
+    </div>
     <svg v-bind="svg.root" tabindex="0" v-if="frame.entities" ref="svg">
       <rect stroke="black" stroke-width="4" :width="scale * 4" :height="scale * 4" fill="none" />
       <g transform="scale(0.75)">

@@ -19,12 +19,13 @@ const PLAYABLE_LINES = VISIBLE - SPACE_TO_SKY
 const alphanum = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 const getDefaultOptions = ({ rules = {}, ...options } = {}) => {
-  let { W = 10, H = 60 } = options
+  const { W = 10, H = 60 } = options
+  options._geo = { W, H }
 
   // expand geometry for floor and wall
-  H++
+  options._geo.H++
   if (!options.wrap) {
-    W += 2
+    options._geo.W += 2
   }
   return { ...options, W, H, rules }
 }
@@ -35,15 +36,16 @@ export default class Board {
     Object.assign(this, _actions)
     this.options = getDefaultOptions(options)
 
-    const geo = new Geo(this.options.W, this.options.H)
+    const { W, H } = this.options._geo
+    const geo = new Geo(W, H)
     Object.assign(this, {
       id,
       entities: {},
       indexes: {},
       geo,
-      start_index: geo.xy2index([Math.floor(this.options.W / 2) - 1, 1]),
+      start_index: geo.xy2index([Math.floor(W / 2) - 1, 1]),
       _id: 1,
-      xs: range(this.options.W),
+      xs: range(W),
       actions: [],
       generator: Piece.generator(this.options.rules.seed),
       ghost: null,

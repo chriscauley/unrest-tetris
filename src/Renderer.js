@@ -1,3 +1,4 @@
+import Mode from './Mode'
 import Piece from './Piece'
 import Geo from '@unrest/geo'
 
@@ -86,6 +87,7 @@ export default class Renderer {
         ghost: this.renderGhost(board.current_piece?.indexes),
         y_shift,
         animations: [],
+        scores: this.getScores(),
       },
       actions: [],
     }
@@ -283,6 +285,7 @@ export default class Renderer {
       this.state.entities = this.state.entities.filter((e) => e.id !== old_id)
       this.state.entities.push(this._newPiece(new_piece))
       this.state.ghost = this.renderGhost(new_piece.indexes)
+      this.state.stash = this.renderStash()
     })
   }
 
@@ -328,6 +331,17 @@ export default class Renderer {
         })
       })
     })
+  }
+
+  getScores() {
+    if (!this.board.options.mode) {
+      return []
+    }
+    const pieces = this.board.actions.filter((a) => a.index !== undefined).length
+    return [
+      Mode[this.board.options.mode.goal].getRemainingText(this.board),
+      `${pieces} pieces placed`,
+    ]
   }
 
   moveNukes(pieces) {

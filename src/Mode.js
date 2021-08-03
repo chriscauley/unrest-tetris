@@ -5,8 +5,8 @@ const { ASH } = Piece
 
 const b0 = {
   getRemaining: (board) => {
-    const indexes = board.entities[ASH]?.indexes.map(board.geo.i2xy)
-    return [...new Set(indexes.map((xy) => xy[0]))]?.length || 0
+    const indexes = board.entities[ASH]?.indexes?.map(board.geo.index2xy) || []
+    return [...new Set(indexes.map((xy) => xy[1]))].length
   },
   getRemainingText: (board) => `${b0.getRemaining(board)} lines left`,
   getOptions: (options, level) => {

@@ -4,6 +4,10 @@
     opacity: 0.5;
   }
 }
+.game__scores {
+  @apply absolute;
+  top: 130px;
+}
 
 svg rect {
   transition: y 0.1s;
