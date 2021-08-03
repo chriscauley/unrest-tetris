@@ -1,6 +1,7 @@
 import Geo from '@unrest/geo'
 import mitt from 'mitt'
 import Hash from 'object-hash'
+import cloneDeep from 'lodash.clonedeep'
 
 import Piece from '../Piece'
 import Btype from '../Btype'
@@ -615,4 +616,14 @@ export default class Board {
     delete this._paused_at
     this._frame = requestAnimationFrame(() => this.tick())
   }
+}
+
+Board.prepOptions = (options) => {
+  options = cloneDeep(options)
+  const { rules } = options
+  rules.seed = (rules.seed || new Date().valueOf() % 256).toString()
+  if (rules.b) {
+    rules.b.seed = (rules.b.seed || new Date().valueOf() % 256).toString()
+  }
+  return options
 }

@@ -1,11 +1,23 @@
 <template>
-  <div>
-    <div v-for="preset in presets" :key="preset.slug" class="mb-8">
-      <h4>{{ preset.name }}</h4>
-      <div class="flex gap-x-2">
-        <button class="btn -primary" v-for="level in levels" :key="level">
-          {{ level }}
-        </button>
+  <div class="flex items-center justify-center h-full absolute w-full">
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">
+          <h2>Select a game</h2>
+        </div>
+        <div v-for="preset in presets" :key="preset.slug" class="mb-8">
+          <h4>{{ preset.name }}</h4>
+          <div class="flex gap-x-2">
+            <button
+              class="btn -primary"
+              @click="play(preset, level)"
+              v-for="level in levels"
+              :key="level"
+            >
+              {{ level }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -13,6 +25,7 @@
 
 <script>
 import { startCase, range } from 'lodash'
+import { Mode } from '@unrest/tetris'
 
 const _presets = {
   vanilla: { id: 1 },
@@ -35,6 +48,24 @@ export default {
       presets,
       levels: range(1, 8),
     }
+  },
+  methods: {
+    play(preset, level) {
+      const { name, slug } = preset
+      const options = Mode.b0.getOptions(
+        {
+          mode: { name, slug },
+          rules: {
+            ...preset.rules,
+            b: { algorithm: 'mod8' },
+          },
+        },
+        level,
+      )
+      this.$store.game.save(options).then((data) => {
+        this.$router.push(`/play/${preset.slug}-${level}/${data.id}/`)
+      })
+    },
   },
 }
 </script>

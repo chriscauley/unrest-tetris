@@ -20,11 +20,6 @@ export default {
     },
     submit() {
       this.update()
-      const { rules } = this.state
-      rules.seed = rules.seed || new Date().valueOf() % 256
-      if (rules.b) {
-        rules.b.seed = rules.b.seed || new Date().valueOf() % 256
-      }
       this.$ui.alert()
       this.$store.game.save(this.state).then((data) => {
         this.$router.push(`/play/tetris/${data.id}/`)
