@@ -1,4 +1,3 @@
-import Mode from './Mode'
 import Piece from './Piece'
 import Geo from '@unrest/geo'
 
@@ -154,7 +153,7 @@ export default class Renderer {
       this.current.frame++
       this.goToFrame(this.current.frame)
     }
-    const { delay = 200 } = this
+    const { delay = 50 } = this
     delete this.delay
     this.setTimeout(callback, delay)
   }
@@ -334,14 +333,15 @@ export default class Renderer {
   }
 
   getScores() {
-    if (!this.board.options.mode) {
+    if (!this.board.mode) {
       return []
     }
     const pieces = this.board.actions.filter((a) => a.index !== undefined).length
-    return [
-      Mode[this.board.options.mode.goal].getRemainingText(this.board),
-      `${pieces} pieces placed`,
-    ]
+    if (this.board.mode?.getRemaining() === 0) {
+      const frame = this.last_frame
+      frame.actions.push(() => this.board.mitt.emit('victory'))
+    }
+    return [this.board.mode.getRemainingText(), `${pieces} pieces placed`]
   }
 
   moveNukes(pieces) {

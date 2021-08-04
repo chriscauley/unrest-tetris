@@ -3,6 +3,7 @@ import mitt from 'mitt'
 import Hash from 'object-hash'
 import cloneDeep from 'lodash.clonedeep'
 
+import Mode from '../Mode'
 import Piece from '../Piece'
 import Btype from '../Btype'
 import Renderer from '../Renderer'
@@ -59,45 +60,53 @@ export default class Board {
     this.makeWall()
     this.makeAsh()
 
-    const { actions, hash } = this.options
     this.nextTurn()
+    this.bindMode()
+    this.options.actions && this.replayPreviousGame()
+  }
 
-    if (actions) {
-      // replay previous game
-      let new_hash
-      try {
-        actions.forEach(({ index, spin, swap }) => {
-          if (swap) {
-            this.swap()
-          } else {
-            if (spin) {
-              this.rotate(spin) // does renderer.moveCurrent
-            }
-            if (index - this.current_piece.index) {
-              const [x, y] = this.geo.index2xy(index)
-              const [old_x, old_y] = this.geo.index2xy(this.current_piece.index)
-              const dy = y - old_y
-              const dx = x - old_x
-              if (dx) {
-                this._moveCurrent(dx)
-                this.renderer.moveCurrent()
-              }
-              if (dy) {
-                this._moveCurrent(dy * this.geo.W)
-                this.renderer.moveCurrent()
-              }
-            }
-            this.nextTurn()
-            new_hash = Hash(this.indexes)
+  bindMode() {
+    if (!this.options.mode) {
+      return
+    }
+    this.mode = Mode[this.options.mode.goal].bind(this)
+  }
+
+  replayPreviousGame() {
+    // replay previous game
+    let new_hash
+    try {
+      this.options.actions.forEach(({ index, spin, swap }) => {
+        if (swap) {
+          this.swap()
+        } else {
+          if (spin) {
+            this.rotate(spin) // does renderer.moveCurrent
           }
-        })
-      } catch (_e) {
-        console.error(`replay failed on step ${this.actions.length}/${actions.length}`)
-        console.error(_e)
-      }
-      if (hash !== new_hash) {
-        console.warn('hash mis-match')
-      }
+          if (index - this.current_piece.index) {
+            const [x, y] = this.geo.index2xy(index)
+            const [old_x, old_y] = this.geo.index2xy(this.current_piece.index)
+            const dy = y - old_y
+            const dx = x - old_x
+            if (dx) {
+              this._moveCurrent(dx)
+              this.renderer.moveCurrent()
+            }
+            if (dy) {
+              this._moveCurrent(dy * this.geo.W)
+              this.renderer.moveCurrent()
+            }
+          }
+          this.nextTurn()
+          new_hash = Hash(this.indexes)
+        }
+      })
+    } catch (_e) {
+      console.error(`replay failed on step ${this.actions.length}/${actions.length}`)
+      console.error(_e)
+    }
+    if (this.options.hash !== new_hash) {
+      console.warn('hash mis-match')
     }
   }
 

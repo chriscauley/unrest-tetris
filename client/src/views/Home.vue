@@ -28,9 +28,8 @@ import { startCase, range } from 'lodash'
 import { Mode } from '@unrest/tetris'
 
 const _presets = {
-  vanilla: { id: 1 },
-  sticky: { sticky: true, id: 2 },
   cascade: { cascade: true, id: 3 },
+  sticky_bomb: { sticky: true, sticky_bomb: true, id: 2 },
   hot_fission: { nuclear: { type: 'fission', temperature: 'hot' }, id: 4 },
   cold_fusion: { nuclear: { type: 'fusion', temperature: 'cold' }, id: 5 },
 }

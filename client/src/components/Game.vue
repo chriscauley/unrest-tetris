@@ -1,7 +1,7 @@
 <template>
   <div :class="css.root">
     <div class="game__scores">
-      <div v-for="text in frame.scores">{{ text }}</div>
+      <div v-for="text in frame.scores" :key="text">{{ text }}</div>
     </div>
     <svg v-bind="svg.root" tabindex="0" v-if="frame.entities" ref="svg">
       <rect stroke="black" stroke-width="4" :width="scale * 4" :height="scale * 4" fill="none" />
@@ -57,6 +57,7 @@
         <button class="btn -primary" @click="resume">Resume</button>
       </template>
     </unrest-modal>
+    <VictoryModal v-if="victory" :game="game" />
   </div>
 </template>
 
@@ -64,6 +65,8 @@
 import { Game } from '@unrest/tetris'
 import mousetrap from '@unrest/vue-mousetrap'
 import makeSprites from '@/sprites'
+
+import VictoryModal from './VictoryModal'
 
 const getBlockText = (piece, block, text) => {
   if (text === 'piece_id') {
@@ -75,6 +78,7 @@ const getBlockText = (piece, block, text) => {
 const range = i => new Array(i).fill().map((_, i) => i)
 
 export default {
+  components: { VictoryModal },
   mixins: [mousetrap.Mixin],
   props: {
     saved_game: Object,
@@ -82,7 +86,15 @@ export default {
   data() {
     const buffer = 2
     const scale = 30
-    return { game: null, scale, buffer, hash: null, paused: false, frame: {} }
+    return {
+      game: null,
+      scale,
+      buffer,
+      hash: null,
+      paused: false,
+      frame: {},
+      victory: false,
+    }
   },
   computed: {
     mousetrap() {
@@ -211,6 +223,7 @@ export default {
       const render_options = { debug: this.$store.debug.state, scale, buffer }
       this.game = new Game({...this.saved_game, buffer, scale, render_options })
       this.game.on('save', () => this.$store.game.save(this.game.board.serialize()))
+      this.game.on('victory', () => this.victory = true)
       this.replay()
     },
     replay() {
