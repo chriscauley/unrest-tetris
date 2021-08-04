@@ -17,8 +17,8 @@ export default {
   },
   computed: {
     text() {
-      const { mode } = this.game.board
-      return mode ? mode.nextLevelText : ''
+      const { campaign } = this.game.board
+      return campaign ? campaign.getNextLevelText(this.game.board.options.campaign.level) : ''
     },
   },
 }

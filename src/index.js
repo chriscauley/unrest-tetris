@@ -1,8 +1,8 @@
 import Board from './Board'
+import Campaign from './Campaign'
 import Game from './Game'
-import Mode from './Mode'
 import Palette from './Palette'
 import Piece from './Piece'
 
-export { Board, Game, Mode, Palette, Piece }
-export default { Board, Game, Mode, Palette, Piece }
+export { Board, Campaign, Game, Palette, Piece }
+export default { Board, Campaign, Game, Palette, Piece }

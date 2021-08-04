@@ -3,9 +3,9 @@ import mitt from 'mitt'
 import Hash from 'object-hash'
 import cloneDeep from 'lodash.clonedeep'
 
-import Mode from '../Mode'
-import Piece from '../Piece'
+import Campaign from '../Campaign'
 import Btype from '../Btype'
+import Piece from '../Piece'
 import Renderer from '../Renderer'
 import _actions from './_actions'
 
@@ -61,15 +61,8 @@ export default class Board {
     this.makeAsh()
 
     this.nextTurn()
-    this.bindMode()
+    this.campaign = Campaign.get({ key: this.options.campaign.key })
     this.options.actions && this.replayPreviousGame()
-  }
-
-  bindMode() {
-    if (!this.options.mode) {
-      return
-    }
-    this.mode = Mode[this.options.mode.goal].bind(this)
   }
 
   replayPreviousGame() {
@@ -102,7 +95,7 @@ export default class Board {
         }
       })
     } catch (_e) {
-      console.error(`replay failed on step ${this.actions.length}/${actions.length}`)
+      console.error(`replay failed on step ${this.actions.length}/${this.options.actions.length}`)
       console.error(_e)
     }
     if (this.options.hash !== new_hash) {

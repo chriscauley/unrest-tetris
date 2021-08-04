@@ -333,15 +333,16 @@ export default class Renderer {
   }
 
   getScores() {
-    if (!this.board.mode) {
+    const { campaign } = this.board
+    if (!campaign) {
       return []
     }
     const pieces = this.board.actions.filter((a) => a.index !== undefined).length
-    if (this.board.mode?.getRemaining() === 0) {
+    if (campaign.getRemainingLines(this.board) === 0) {
       const frame = this.last_frame
       frame.actions.push(() => this.board.mitt.emit('victory'))
     }
-    return [this.board.mode.getRemainingText(), `${pieces} pieces placed`]
+    return [campaign.getRemainingText(this.board), `${pieces} pieces placed`]
   }
 
   moveNukes(pieces) {
