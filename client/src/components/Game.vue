@@ -8,9 +8,8 @@
       <g transform="scale(0.75)">
         <use v-for="block in frame.stash" v-bind="block" :key="block.key" />
       </g>
-      <rect v-for="(line, i) in svg.lines" v-bind="line" :key="i" />
-      <rect v-bind="svg.sea_level" />
       <g :transform="`translate(${4 * scale}, ${scale * frame.y_shift})`">
+        <rect v-bind="svg.board_bg" />
         <rect fill="url(#dangerHatch)" :width="scale * game.board.geo.W" :height="scale * 3" />
         <template v-for="(piece, i) in frame.entities" :key="i">
           <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
@@ -37,18 +36,25 @@
           <use v-for="block in piece.blocks" v-bind="block" :key="block.key" />
         </template>
       </g>
-      <pattern id="dangerHatch" patternUnits="userSpaceOnUse" v-bind="svg.danger_pattern">
-        <rect v-bind="svg.danger_bg" />
-        <path v-bind="svg.danger_path" />
-      </pattern>
-      <pattern id="CHatch" patternUnits="userSpaceOnUse" v-bind="svg.cold_pattern">
-        <rect v-bind="svg.cold_bg" />
-        <path v-bind="svg.cold_path" />
-      </pattern>
-      <pattern id="HHatch" patternUnits="userSpaceOnUse" v-bind="svg.hot_pattern">
-        <rect v-bind="svg.hot_bg" />
-        <path v-bind="svg.hot_path" />
-      </pattern>
+      <rect v-for="(line, i) in svg.lines" v-bind="line" :key="i" />
+      <rect v-bind="svg.sea_level" />
+      <defs>
+        <pattern id="dangerHatch" patternUnits="userSpaceOnUse" v-bind="svg.danger_pattern">
+          <rect v-bind="svg.danger_bg" />
+          <path v-bind="svg.danger_path" />
+        </pattern>
+        <pattern id="CHatch" patternUnits="userSpaceOnUse" v-bind="svg.cold_pattern">
+          <rect v-bind="svg.cold_bg" />
+          <path v-bind="svg.cold_path" />
+        </pattern>
+        <pattern id="HHatch" patternUnits="userSpaceOnUse" v-bind="svg.hot_pattern">
+          <rect v-bind="svg.hot_bg" />
+          <path v-bind="svg.hot_path" />
+        </pattern>
+        <pattern id="board-fill" patternUnits="userSpaceOnUse" width="400" height="400">
+          <image x="0" y="0" width="400" height="400" href="dark-grey-terrazzo.png" />
+        </pattern>
+      </defs>
     </svg>
     <unrest-modal v-if="paused" class="game__paused -absolute">
       <template #actions>
@@ -145,7 +151,7 @@ export default {
       return blocks
     },
     svg() {
-      const { W } = this.game.board.geo
+      const { W, H } = this.game.board.geo
       const { scale, buffer } = this
       const width = (9 + W) * this.scale
       const skyline = {
@@ -170,7 +176,7 @@ export default {
         },
         lines,
         sea_level: {
-          fill: 'rgba(0,0,0,0.2)',
+          fill: 'rgba(64, 64, 255, 0.4)',
           width,
           height: scale * 10,
           y: scale * 22,
@@ -205,7 +211,12 @@ export default {
           rx: scale / 3,
           ry: scale / 3,
           fill: 'white',
-        }
+        },
+        board_bg: {
+          height: scale * H,
+          width: scale * W,
+          fill: "url(#board-fill)",
+        },
       }
     },
   },
