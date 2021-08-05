@@ -480,7 +480,7 @@ export default class Board {
     this._skyline = Math.min(this._skyline, this.geo.H - PLAYABLE_LINES - 1) // -1 is for floor
     this._sealevel = this._skyline + PLAYABLE_LINES
     if (this._min_y <= 4) {
-      this.mitt.emit('gameover')
+      this.gameover = true
     } else {
       this.addPiece()
     }

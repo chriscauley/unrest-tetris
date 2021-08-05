@@ -19,7 +19,7 @@ class Campaign {
     this.key = `${id}-${version}`
     this.slug = slugify(name)
   }
-  getOptions(level) {
+  getLevelOptions(level) {
     const rules = cloneDeep(this.rules)
     const { key } = this
     rules.b = {

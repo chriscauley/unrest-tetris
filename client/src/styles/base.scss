@@ -16,3 +16,13 @@ svg rect {
 .gap-x-2 {
   column-gap: 0.5rem;
 }
+
+.view-home {
+  @apply flex items-center justify-center h-full absolute w-full;
+  .button-set {
+    @apply flex gap-x-2 mb-6;
+  }
+  .card {
+    @apply shadow-lg
+  }
+}

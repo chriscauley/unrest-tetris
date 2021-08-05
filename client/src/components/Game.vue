@@ -60,11 +60,12 @@
       Game Paused
       <template #actions>
         <button class="btn -secondary" @click="replay">Replay</button>
-        <button class="btn -secondary" @click="clone">Clone</button>
+        <button class="btn -secondary" @click="clone">Start Over</button>
         <button class="btn -primary" @click="resume">Resume</button>
       </template>
     </unrest-modal>
-    <VictoryModal v-if="victory" :game="game" />
+    <GameOver v-if="gameover" :game="game" :replay="replay" :clone="clone" />
+    <VictoryModal v-if="victory" :game="game" :replay="replay" />
   </div>
 </template>
 
@@ -73,6 +74,7 @@ import { Game } from '@unrest/tetris'
 import mousetrap from '@unrest/vue-mousetrap'
 import makeSprites from '@/sprites'
 
+import GameOver from './GameOver'
 import VictoryModal from './VictoryModal'
 
 const getBlockText = (piece, block, text) => {
@@ -85,7 +87,7 @@ const getBlockText = (piece, block, text) => {
 const range = i => new Array(i).fill().map((_, i) => i)
 
 export default {
-  components: { VictoryModal },
+  components: { VictoryModal, GameOver },
   mixins: [mousetrap.Mixin],
   props: {
     saved_game: Object,
@@ -100,6 +102,7 @@ export default {
       hash: null,
       paused: false,
       frame: {},
+      gameover: false,
       victory: false,
     }
   },
@@ -236,6 +239,7 @@ export default {
       this.game = new Game({...this.saved_game, buffer, scale, render_options })
       this.game.on('save', () => this.$store.game.save(this.game.board.serialize()))
       this.game.on('victory', () => this.victory = true)
+      this.game.on('gameover', () => this.gameover = true)
       this.replay()
     },
     replay() {
@@ -245,8 +249,10 @@ export default {
       this.resume()
     },
     input(action) {
-      this.game.input(action)
-      this.render()
+      if (!this.gameover) {
+        this.game.input(action)
+        this.render()
+      }
     },
     render() {
       const { renderer } = this.game.board

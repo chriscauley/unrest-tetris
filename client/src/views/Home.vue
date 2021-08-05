@@ -1,13 +1,13 @@
 <template>
-  <div class="flex items-center justify-center h-full absolute w-full">
+  <div class="view-home">
     <div class="card">
       <div class="card-body">
         <div class="card-title">
           <h2>Select a game</h2>
         </div>
-        <div v-for="campaign in campaigns" :key="campaign.key" class="mb-8">
+        <div v-for="campaign in campaigns" :key="campaign.key">
           <h4>{{ campaign.name }}</h4>
-          <div class="flex gap-x-2">
+          <div class="button-set">
             <button
               class="btn -primary"
               @click="play(campaign, level)"
@@ -25,6 +25,7 @@
 
 <script>
 import { Campaign } from '@unrest/tetris'
+import { range } from 'lodash'
 
 export default {
   __route: {
@@ -38,7 +39,7 @@ export default {
   },
   methods: {
     play(campaign, level) {
-      const options = campaign.getOptions(level)
+      const options = campaign.getLevelOptions(level)
       this.$store.game.save(options).then((data) => {
         this.$router.push(`/play/${campaign.getLevelSlug(level)}/${data.id}/`)
       })

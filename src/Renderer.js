@@ -295,7 +295,7 @@ export default class Renderer {
     const frame = this.last_frame
     const { scale } = this.options
     frame.actions.push(() => {
-      this.delay = 200
+      this.delay = 300
       ys.forEach((y) => {
         this.state.animations.unshift({
           key: Math.random(),
@@ -337,10 +337,12 @@ export default class Renderer {
     if (!campaign) {
       return []
     }
+    const frame = this.last_frame
     const pieces = this.board.actions.filter((a) => a.index !== undefined).length
     if (campaign.getRemainingLines(this.board) === 0) {
-      const frame = this.last_frame
       frame.actions.push(() => this.board.mitt.emit('victory'))
+    } else if (this.board.gameover) {
+      frame.actions.push(() => this.board.mitt.emit('gameover'))
     }
     return [campaign.getRemainingText(this.board), `${pieces} pieces placed`]
   }
