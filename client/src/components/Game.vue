@@ -57,6 +57,7 @@
       </defs>
     </svg>
     <unrest-modal v-if="paused" class="game__paused -absolute">
+      Game Paused
       <template #actions>
         <button class="btn -secondary" @click="replay">Replay</button>
         <button class="btn -secondary" @click="clone">Clone</button>

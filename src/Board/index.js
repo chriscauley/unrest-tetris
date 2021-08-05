@@ -61,7 +61,7 @@ export default class Board {
     this.makeAsh()
 
     this.nextTurn()
-    this.campaign = Campaign.get({ key: this.options.campaign.key })
+    this.campaign = Campaign.get({ key: this.options.campaign?.key })
     this.options.actions && this.replayPreviousGame()
   }
 
@@ -476,10 +476,14 @@ export default class Board {
       .filter((p) => p.id !== WALL)
       .map((p) => p._min_y)
     this._min_y = Math.min(this.geo.H, ...ys)
-    this._min_y = Math.max(SPACE_TO_SKY, this._min_y)
-    this._skyline = Math.min(this._min_y, this.geo.H - PLAYABLE_LINES - 1) // -1 is for floor
+    this._skyline = Math.max(SPACE_TO_SKY, this._min_y)
+    this._skyline = Math.min(this._skyline, this.geo.H - PLAYABLE_LINES - 1) // -1 is for floor
     this._sealevel = this._skyline + PLAYABLE_LINES
-    this.addPiece()
+    if (this._min_y <= 4) {
+      this.mitt.emit('gameover')
+    } else {
+      this.addPiece()
+    }
     this.mitt.emit('save')
     this.renderer.draw()
   }

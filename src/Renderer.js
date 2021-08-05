@@ -64,7 +64,7 @@ export default class Renderer {
   draw() {
     const { board } = this
     const { scale } = this.options
-    const bottom_y = Math.min(board._min_y + 17, board.geo.H)
+    const bottom_y = Math.min(board._skyline + 17, board.geo.H)
     const skyline_y = Math.max(0, bottom_y - 17)
     const y_shift = 6 - skyline_y
 

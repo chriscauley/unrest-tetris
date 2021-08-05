@@ -1,7 +1,6 @@
 import Board from '../src/Board'
 import Piece from '../src/Piece'
 
-const print = (board) => console.log(board.geo.print(board.indexes, { empty: 'X' })) // eslint-disable-line
 const reducedIndexes = (board) =>
   Object.fromEntries(Object.entries(board.indexes).filter((e) => e[1] !== Piece.WALL))
 
@@ -23,15 +22,13 @@ test('Board.drop', () => {
   const results = {}
   Piece.all.forEach((piece) => {
     results[piece.shape] = 0
-    const board = new Board({ rules: { seed: piece.shape } })
-    while (results[piece.shape]++ < 30) {
-      try {
-        board.rotate(1)
-        board.drop()
-        board.nextTurn()
-      } catch (_e) {
-        break
-      }
+    const board = new Board({ W: 10, H: 20, rules: { seed: piece.shape } })
+    let done
+    board.mitt.on('gameover', () => (done = true))
+    while (!done && results[piece.shape]++ < 30) {
+      board.rotate(1)
+      board.drop()
+      board.nextTurn()
     }
   })
   expect(results).toMatchSnapshot()
@@ -43,7 +40,7 @@ test('Board.options', () => {
 })
 
 test('Board.clearLine', () => {
-  const board = new Board({ rules: { seed: 'iiitttti' } })
+  const board = new Board({ W: 10, H: 20, rules: { seed: 'iiitttti' } })
   const placePiece = (dindex, rotate) => {
     rotate && board.rotate(1)
     board._moveCurrent(dindex)
