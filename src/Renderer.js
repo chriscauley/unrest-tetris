@@ -340,9 +340,9 @@ export default class Renderer {
     const frame = this.last_frame
     const pieces = this.board.actions.filter((a) => a.index !== undefined).length
     if (campaign.getRemainingLines(this.board) === 0) {
-      frame.actions.push(() => this.board.mitt.emit('victory'))
+      frame.actions.push(() => this.board.mitt.emit('render-victory'))
     } else if (this.board.gameover) {
-      frame.actions.push(() => this.board.mitt.emit('gameover'))
+      frame.actions.push(() => this.board.mitt.emit('render-gameover'))
     }
     return [campaign.getRemainingText(this.board), `${pieces} pieces placed`]
   }

@@ -109,12 +109,12 @@ export default {
   computed: {
     mousetrap() {
       return {
-        up: () => this.input('rotate') || false,
+        up: () => this.input('rotate'),
         right: () => this.input('right'),
         left: () => this.input('left'),
         down: () => this.input('down'),
         space: {
-          keydown: () => this.input('drop') || false,
+          keydown: () => this.input('drop'),
           keyup: () => this.input('lock'),
         },
         z: () => this.input('swap'),
@@ -238,8 +238,8 @@ export default {
       const render_options = { debug: this.$store.debug.state, scale, buffer }
       this.game = new Game({...this.saved_game, buffer, scale, render_options })
       this.game.on('save', () => this.$store.game.save(this.game.board.serialize()))
-      this.game.on('victory', () => this.victory = true)
-      this.game.on('gameover', () => this.gameover = true)
+      this.game.on('render-victory', () => this.victory = true)
+      this.game.on('render-gameover', () => this.gameover = true)
       this.replay()
     },
     replay() {
@@ -252,6 +252,7 @@ export default {
       if (!this.gameover) {
         this.game.input(action)
         this.render()
+        return false // prevents default
       }
     },
     render() {

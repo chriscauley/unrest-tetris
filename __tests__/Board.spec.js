@@ -7,7 +7,7 @@ const reducedIndexes = (board) =>
 test('Board.rotate', () => {
   const results = {}
   Piece.shapes.forEach((shape) => {
-    const board = new Board({ rules: { seed: shape } })
+    const board = new Board({ W: 10, H: 20, rules: { seed: shape } })
     results[shape] = Object.keys(reducedIndexes(board)).join(',')
     for (let i = 0; i < 4; i++) {
       board.rotate(1)
@@ -25,7 +25,8 @@ test('Board.drop', () => {
     const board = new Board({ W: 10, H: 20, rules: { seed: piece.shape } })
     let done
     board.mitt.on('gameover', () => (done = true))
-    while (!done && results[piece.shape]++ < 30) {
+    while (!done && results[piece.shape] < 30) {
+      results[piece.shape]++
       board.rotate(1)
       board.drop()
       board.nextTurn()
