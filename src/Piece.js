@@ -54,6 +54,7 @@ export default {
   ASH: 'A',
   COLD: 'C',
   HOT: 'H',
+  SINGLET: '1',
   generator: (s) => {
     s = s || new Date().valueOf() % 256
     if (s.match?.(/^\d+$/)) {

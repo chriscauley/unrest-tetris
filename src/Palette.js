@@ -7,10 +7,11 @@ const _default = {
   z: '#e51800',
   j: '#0101f7',
   outline: 'rgba(0,0,0,0.25)',
-  W: '#000',
-  A: '#888',
-  C: 'blue',
-  H: 'red',
+  1: '#fff', // singlet (from sticky bomb)
+  W: '#000', // wall
+  A: '#888', // ash (from b mode)
+  C: 'blue', // cold fission/fusion
+  H: '#f00', // hot fission/fusion
 }
 
 export default { default: _default }

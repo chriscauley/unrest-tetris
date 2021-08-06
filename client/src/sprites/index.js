@@ -1,6 +1,6 @@
 import { Palette, Piece } from '@unrest/tetris'
 
-const { WALL, ASH, HOT, COLD } = Piece
+const { WALL, ASH, HOT, COLD, SINGLET } = Piece
 
 const always_y = [ASH, HOT, COLD]
 const always_x = [HOT, COLD]
@@ -54,5 +54,6 @@ export default (scale, buffer) => {
   makeColor(ASH)
   makeColor(COLD)
   makeColor(HOT)
+  makeColor(SINGLET)
   snap.node.style = 'display: none'
 }

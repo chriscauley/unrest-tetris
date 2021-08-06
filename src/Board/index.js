@@ -9,7 +9,7 @@ import Piece from '../Piece'
 import Renderer from '../Renderer'
 import _actions from './_actions'
 
-const { WALL, ASH, HOT, COLD } = Piece
+const { WALL, ASH, HOT, COLD, SINGLET } = Piece
 
 const range = (len) => new Array(len).fill(0).map((_, i) => i)
 
@@ -94,9 +94,9 @@ export default class Board {
           new_hash = Hash(this.indexes)
         }
       })
-    } catch (_e) {
+    } catch (e) {
       console.error(`replay failed on step ${this.actions.length}/${this.options.actions.length}`)
-      console.error(_e)
+      throw e
     }
     if (this.options.hash !== new_hash) {
       console.warn('hash mis-match')
@@ -222,6 +222,9 @@ export default class Board {
   }
 
   checkAndStick(piece) {
+    if ([SINGLET, HOT, COLD, WALL, ASH].includes(piece.shape)) {
+      return
+    }
     const merge = {}
     piece.indexes.forEach((index) => {
       this.geo.dindexes.forEach((dindex) => {
@@ -298,6 +301,51 @@ export default class Board {
     return true
   }
 
+  _checkAndStickyBomb(delete_ys) {
+    this._sticky_bombs = []
+    if (!this.options.rules.sticky_bomb || !this.current_piece) {
+      return
+    }
+    const trigger_sticky = this.current_piece.indexes.filter((i) =>
+      delete_ys.includes(this.geo.index2xy(i)[1]),
+    ).length
+    const to_check = trigger_sticky ? this.current_piece.indexes.slice() : []
+    let trigger_bomb = false
+    const checked = {}
+    while (to_check.length) {
+      const index = to_check.pop()
+      if (checked[index]) {
+        continue
+      }
+      checked[index] = true
+      this.geo.dindexes.forEach((di) => {
+        const target_index = di + index
+        if (checked[target_index]) {
+          return
+        }
+        const target_piece = this.entities[this.indexes[target_index]]
+        if (target_piece && ![HOT, COLD, SINGLET, WALL].includes(target_piece.shape)) {
+          // convert any adjacent blocks to singlet
+          this._sticky_bombs.push(target_index)
+          if (target_piece.shape === this.current_piece.shape) {
+            // if target is same shape as current, it explodes too
+            to_check.push(target_index)
+            if (target_piece.id !== this.current_piece.id) {
+              trigger_bomb = true
+            }
+          }
+        }
+      })
+    }
+    this._sticky_bombs = [...new Set(this._sticky_bombs)]
+    if (trigger_bomb) {
+      this._sticky_bombs.forEach((index) => {
+        this._removeBlock(index)
+        this._newPiece({ shape: SINGLET, indexes: [index] })
+      })
+    }
+  }
+
   updateBoard(pieces) {
     const indexes = []
     pieces.forEach((p) => p.indexes.forEach((i) => indexes.push(i)))
@@ -307,6 +355,7 @@ export default class Board {
     const delete_ys = ys.filter((y) => this._lineWillClear(y))
     this._removed_pieces_by_id = {}
     this._checkAndNuke(delete_ys)
+    this._checkAndStickyBomb(delete_ys)
     this._cleared_current = []
     this._cleared_hot_cold = {}
     delete_ys.sort((a, b) => a - b)
@@ -340,7 +389,8 @@ export default class Board {
 
     const check_cascade =
       (delete_ys.length && this.options.rules.cascade) ||
-      Object.keys(this._cleared_hot_cold).length > 0
+      Object.keys(this._cleared_hot_cold).length > 0 ||
+      this._sticky_bombs.length > 0
     if (check_cascade) {
       this.checkAndCascade()
     }
