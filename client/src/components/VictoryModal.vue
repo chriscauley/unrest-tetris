@@ -6,9 +6,7 @@
       <button class="btn -secondary" @click="replay">Watch Replay</button>
     </template>
   </unrest-modal>
-  <div v-else class="btn -primary victory-button" @click="open = true">
-    You win!
-  </div>
+  <div v-else class="btn -primary victory-button" @click="open = true">You win!</div>
 </template>
 
 <script>

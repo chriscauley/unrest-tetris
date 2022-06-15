@@ -7,6 +7,7 @@ import Game from '@/components/Game'
 import { startCase } from 'lodash'
 
 export default {
+  name: 'GameView',
   __route: {
     path: '/play/:game_name/:game_id/',
     title: (to) => startCase(to.params.game_name),

@@ -20,15 +20,17 @@
     "serve": "vite preview"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.14.7",
-    "@unrest/eslint-config": "^0.0.5",
-    "babel-jest": "^27.0.6",
-    "jest": "^27.0.6",
-    "vite": "^2.4.0"
+    "@unrest/eslint-config": "^0.0.8",
+    "@vue/cli-plugin-babel": "^5.0.4",
+    "babel-jest": "^28.1.1",
+    "jest": "^28.1.1",
+    "jest-environment-jsdom": "^28.1.1",
+    "vite": "^2.9.12"
   },
   "dependencies": {
+    "@unrest/geo": "^0.0.4",
     "lodash.clonedeep": "^4.5.0",
     "mitt": "^3.0.0",
-    "object-hash": "^2.2.0"
+    "object-hash": "^3.0.0"
   }
 }

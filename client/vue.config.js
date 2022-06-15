@@ -6,7 +6,6 @@ module.exports = {
     resolve: {
       alias: {
         '@unrest/tetris': path.resolve(__dirname, '../src'),
-        '@unrest/geo': path.resolve(__dirname, '../../../Geo/dist/index.js'),
       },
     },
   },

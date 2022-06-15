@@ -31,6 +31,7 @@ export default {
   __route: {
     path: '/',
   },
+  name: 'HomeView',
   data() {
     return {
       campaigns: Campaign.list,

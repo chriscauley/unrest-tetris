@@ -84,9 +84,10 @@ const getBlockText = (piece, block, text) => {
   return block[text.replace('block_', '')]
 }
 
-const range = i => new Array(i).fill().map((_, i) => i)
+const range = (i) => new Array(i).fill().map((_, i) => i)
 
 export default {
+  name: 'GameCanvas',
   components: { VictoryModal, GameOver },
   mixins: [mousetrap.Mixin],
   props: {
@@ -118,29 +119,31 @@ export default {
           keyup: () => this.input('lock'),
         },
         z: () => this.input('swap'),
-        escape: () => this.[this.game.paused ? 'resume' : 'pause']()
+        escape: () => this[this.game.paused ? 'resume' : 'pause'](),
       }
     },
     css() {
-      const {half_opacity} = this.$store.debug.state
+      const { half_opacity } = this.$store.debug.state
       return {
-        root: ['game__wrapper', { half_opacity }]
+        root: ['game__wrapper', { half_opacity }],
       }
     },
     text_blocks() {
       const blocks = []
       const { text } = this.$store.debug.state
       if (['piece_id', 'block_id', 'block_key'].includes(text)) {
-        this.frame.entities.filter(p => typeof p.id === 'number').forEach((piece) => {
-          piece.blocks.forEach((block) =>
-            blocks.push({
-              x: block.x,
-              y: block.y + (this.scale * 2) / 3,
-              key: block.key,
-              text: getBlockText(piece, block, text),
-            }),
-          )
-        })
+        this.frame.entities
+          .filter((p) => typeof p.id === 'number')
+          .forEach((piece) => {
+            piece.blocks.forEach((block) =>
+              blocks.push({
+                x: block.x,
+                y: block.y + (this.scale * 2) / 3,
+                key: block.key,
+                text: getBlockText(piece, block, text),
+              }),
+            )
+          })
       } else if (text === 'board_index') {
         this.game.board?.geo.indexes.forEach((i) => {
           const xy = this.game.board.geo.index2xy(i)
@@ -167,9 +170,8 @@ export default {
       }
 
       const lines = [skyline]
-      this.$store.debug.state.annotate && range(5).forEach(i =>
-        lines.push({ ...skyline, fill: 'black', y: scale * 5 * i })
-      )
+      this.$store.debug.state.annotate &&
+        range(5).forEach((i) => lines.push({ ...skyline, fill: 'black', y: scale * 5 * i }))
       const d_scale = 6
       const n_scale = 1
 
@@ -185,28 +187,28 @@ export default {
           height: scale * 10,
           y: scale * 22,
         },
-        danger_bg: { fill: "#fbb", width: "100%", height: "100%" },
-        danger_pattern: { width: 4*d_scale, height: 4* d_scale },
+        danger_bg: { fill: '#fbb', width: '100%', height: '100%' },
+        danger_pattern: { width: 4 * d_scale, height: 4 * d_scale },
         danger_path: {
           d: `M-1,1 l2,-2
               M0,4 l4,-4
-              M3,5 l2,-2`.replace(/\d+/g, i => i * d_scale),
+              M3,5 l2,-2`.replace(/\d+/g, (i) => i * d_scale),
           style: `stroke: #F00; stroke-width:${1.5 * d_scale}`, // stroke-width is a guess
         },
-        hot_bg: { fill: "#888", width: "100%", height: "100%" },
-        hot_pattern: { width: 4*n_scale, height: 4* n_scale },
+        hot_bg: { fill: '#888', width: '100%', height: '100%' },
+        hot_pattern: { width: 4 * n_scale, height: 4 * n_scale },
         hot_path: {
           d: `M-1,1 l2,-2
               M0,4 l4,-4
-              M3,5 l2,-2`.replace(/\d+/g, i => i * n_scale),
+              M3,5 l2,-2`.replace(/\d+/g, (i) => i * n_scale),
           style: `stroke: #F00; stroke-width:${1.5 * n_scale}`, // stroke-width is a guess
         },
-        cold_bg: { fill: "#888", width: "100%", height: "100%" },
-        cold_pattern: { width: 4*n_scale, height: 4* n_scale },
+        cold_bg: { fill: '#888', width: '100%', height: '100%' },
+        cold_pattern: { width: 4 * n_scale, height: 4 * n_scale },
         cold_path: {
           d: `M-1,1 l2,-2
               M0,4 l4,-4
-              M3,5 l2,-2`.replace(/\d+/g, i => i * n_scale),
+              M3,5 l2,-2`.replace(/\d+/g, (i) => i * n_scale),
           style: `stroke: #00F; stroke-width:${1.5 * n_scale}`, // stroke-width is a guess
         },
         charge_ellipse: {
@@ -219,7 +221,7 @@ export default {
         board_bg: {
           height: scale * H,
           width: scale * W,
-          fill: "url(#board-fill)",
+          fill: 'url(#board-fill)',
         },
       }
     },
@@ -236,10 +238,10 @@ export default {
     restart() {
       const { scale, buffer } = this
       const render_options = { debug: this.$store.debug.state, scale, buffer }
-      this.game = new Game({...this.saved_game, buffer, scale, render_options })
+      this.game = new Game({ ...this.saved_game, buffer, scale, render_options })
       this.game.on('save', () => this.$store.game.save(this.game.board.serialize()))
-      this.game.on('render-victory', () => this.victory = true)
-      this.game.on('render-gameover', () => this.gameover = true)
+      this.game.on('render-victory', () => (this.victory = true))
+      this.game.on('render-gameover', () => (this.gameover = true))
       this.replay()
     },
     replay() {

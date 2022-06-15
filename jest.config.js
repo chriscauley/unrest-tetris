@@ -8,7 +8,6 @@ module.exports = {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
   moduleNameMapper: {
-    '@unrest/geo': path.resolve(__dirname, '../../Geo/dist/index.js'),
     '^@/(.*)$':  '<rootDir>/src/$1',
   }
 }

@@ -1,11 +1,6 @@
 const path = require('path')
 
 module.exports = {
-  resolve: {
-    alias: {
-      '@unrest/geo': path.resolve(__dirname, '../../Geo/src/index.js'),
-    }
-  },
   build: {
     lib: {
       entry: path.resolve(__dirname, 'src/index.js'),
